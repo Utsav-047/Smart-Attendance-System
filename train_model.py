@@ -1,45 +1,42 @@
 import cv2
 import numpy as np
 import os
+import sqlite3
 
-# ----------- FACE DETECTOR -----------
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
+DATASET_PATH = "face_dataset"
 
-# ----------- DATASET PATH -----------
-dataset_path = "face_dataset"
+conn = sqlite3.connect("database.db")
+cursor = conn.cursor()
 
 faces = []
 labels = []
 
-# ----------- READ DATASET -----------
-for folder_name in os.listdir(dataset_path):
-    folder_path = os.path.join(dataset_path, folder_name)
-
-    if not os.path.isdir(folder_path):
+for roll in os.listdir(DATASET_PATH):
+    folder = os.path.join(DATASET_PATH, roll)
+    if not os.path.isdir(folder):
         continue
 
-    label = int(folder_name)  # student ID
+    cursor.execute("SELECT id FROM students WHERE roll = ?", (roll,))
+    result = cursor.fetchone()
+    if result is None:
+        print(f"⚠ Roll {roll} not found in database")
+        continue
 
-    for image_name in os.listdir(folder_path):
-        image_path = os.path.join(folder_path, image_name)
+    student_id = result[0]
 
-        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    for img_name in os.listdir(folder):
+        img_path = os.path.join(folder, img_name)
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             continue
 
         faces.append(img)
-        labels.append(label)
+        labels.append(student_id)
 
-print(f"Total faces: {len(faces)}")
-print(f"Total labels: {len(labels)}")
+conn.close()
 
-# ----------- TRAIN MODEL -----------
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 recognizer.train(faces, np.array(labels))
-
-# ----------- SAVE MODEL -----------
 recognizer.save("trainer.yml")
 
-print(" Face recognition model trained and saved successfully!")
+print(" Model trained using roll-number folders")
