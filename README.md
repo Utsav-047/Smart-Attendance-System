@@ -151,42 +151,6 @@ The application will be available at `http://localhost:5000`
    - Select date range
    - View/download attendance reports
 
-## Project Structure
-
-```
-smart_attendance_system/
-│
-├── config/
-│   └── config.py                 # Configuration settings
-│
-├── database/
-│   └── db_manager.py             # Database models and operations
-│
-├── face_recognition/
-│   ├── face_detector.py          # Face detection and recognition
-│   └── face_trainer.py           # (Optional) Train models
-│
-├── email_service/
-│   └── email_sender.py           # Email notification service
-│
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── images/
-│       └── students/             # Student photos
-│
-├── templates/
-│   ├── admin_dashboard.html      # Admin interface
-│   ├── student_dashboard.html    # Student interface
-│   ├── login.html                # Login page
-│   └── register.html             # Registration page
-│
-├── app.py                        # Main application
-├── requirements.txt              # Dependencies
-├── attendance.db                 # SQLite database (auto-created)
-└── README.md                     # This file
-```
-
 ## Configuration
 
 ### Attendance Sessions
