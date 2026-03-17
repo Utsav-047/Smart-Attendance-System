@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>All Students</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+    .sidebar { width:230px; min-height:100vh; background:#0b3d91; position:fixed; top:0; left:0; padding-top:20px; z-index:100; }
+    .sidebar .brand { color:white; font-size:18px; font-weight:700; padding:15px 20px 25px; border-bottom:1px solid rgba(255,255,255,0.15); display:block; }
+    .sidebar a { display:block; color:rgba(255,255,255,0.75); padding:13px 20px; text-decoration:none; font-size:14px; border-left:3px solid transparent; transition:all 0.2s; }
+    .sidebar a:hover, .sidebar a.active { background:rgba(255,255,255,0.1); color:white; border-left-color:white; }
+    .sidebar a i { width:22px; margin-right:8px; }
+    .main { margin-left:230px; padding:30px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <span class="brand"><i class="fas fa-camera me-2"></i>SmartAttend</span>
+  <a href="/admin"><i class="fas fa-tachometer-alt"></i>Dashboard</a>
+  <a href="/admin/attendance"><i class="fas fa-calendar-check"></i>Attendance History</a>
+  <a href="/admin/students" class="active"><i class="fas fa-users"></i>All Students</a>
+  <a href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a>
+</div>
+
+<div class="main">
+  <h5 class="fw-bold mb-4">All Students ({{ students|length }})</h5>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>#</th><th>Name</th><th>Roll</th><th>Email</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            {% for s in students %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ s.name }}</td>
+              <td><code>{{ s.roll }}</code></td>
+              <td>{{ s.email }}</td>
+              <td>
+                <form method="POST" action="/admin/delete/{{ s.id }}"
+                      onsubmit="return confirm('Delete {{ s.name }}? This will also delete their attendance records.')">
+                  <button class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash"></i> Delete
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center py-5 text-muted">No students registered yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
