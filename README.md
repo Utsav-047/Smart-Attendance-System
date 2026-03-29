@@ -1,249 +1,233 @@
-# Smart Attendance System with Face Recognition
+# 📷 Smart Attendance System Using Face Recognition
 
-A comprehensive attendance management system using face detection and recognition, with separate dashboards for students and administrators, automated email notifications, and time-based session management.
+> An AI-powered web-based attendance system that uses **face recognition** to automatically mark student attendance, with **automated email alerts** for absent students and a full **admin dashboard**.
 
-## Features
+---
 
-### For Students
-- Face recognition-based attendance marking
-- Personal dashboard with attendance statistics
-- View attendance history
-- Email notifications for attendance confirmation
-- Real-time session tracking
+## 👨‍💻 Developed By
 
-### For Administrators
-- Complete attendance management system
-- View all students and their attendance records
-- Mark absent students automatically
-- Send bulk email notifications to absent students
-- Generate attendance reports
-- Dashboard with real-time statistics
-- Manage attendance sessions
+| Student ID | Name |
+|------------|------|
+| 24AIML047 | Patel Utsav |
+| 24AIML044 | Patel Renish |
 
-### System Features
-- **Face Recognition**: Uses OpenCV and face_recognition library
-- **Time Sessions**: Morning, Afternoon, Evening sessions
-- **Email Notifications**: Automatic emails for absent students
-- **Secure Authentication**: Password hashing and session management
-- **Database**: SQLite for data persistence
-- **Responsive UI**: Bootstrap-based modern interface
+**Institution:** Chandubhai S. Patel Institute of Technology (CSPIT)  
+**Department:** Artificial Intelligence & Machine Learning  
+**University:** CHARUSAT
 
-## Installation
+---
 
-### Prerequisites
-- Python 3.8 or higher
-- Webcam for face recognition
-- Gmail account for email notifications (or other SMTP server)
+## 🚀 Features
 
-### Step 1: Clone or Download the Project
+- 🤖 **AI Face Recognition** — Automatically detects and identifies students using OpenCV LBPH
+- ⏳ **3-Stage Attendance** — Pending → Present → Absent flow
+- 📧 **Auto Email Alerts** — Sends absence notification emails to absent students
+- 🔒 **Close Attendance** — Admin can lock attendance, converting all Pending to Absent
+- 📊 **Admin Dashboard** — Live stats, attendance rate progress bar, today's records
+- 📅 **Attendance History** — Filter by date, view all records
+- 👨‍🎓 **Student Portal** — Students can view their own attendance percentage and history
+- 🗄️ **MySQL Database** — All data stored in MySQL via XAMPP
+- 🔐 **Secure Login** — Hashed passwords using Werkzeug
 
-```bash
-# Create project directory
-mkdir smart_attendance_system
-cd smart_attendance_system
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python, Flask |
+| Face Recognition | OpenCV (LBPH), Haar Cascade |
+| Database | MySQL (XAMPP) |
+| Frontend | HTML, Bootstrap 5, Font Awesome |
+| Email | Python smtplib (Gmail SMTP) |
+| Security | Werkzeug password hashing |
+
+---
+
+## 📁 Project Structure
+
+```
+ATTENDANCE_SYSTEM/
+├── app.py                    # Main Flask application
+├── capture_faces.py          # Capture student face images
+├── train_model.py            # Train LBPH face recognition model
+├── recognize_attendance.py   # Run face recognition & mark attendance
+├── reset_today_attendance.py # Reset today's attendance records
+├── email_config.py           # Gmail SMTP configuration
+├── requirements.txt          # Python dependencies
+├── trainer.yml               # Trained face model (auto-generated)
+├── face_dataset/             # Captured face images (auto-generated)
+│   └── <roll_number>/
+│       └── img1.jpg ...
+└── templates/
+    ├── login.html
+    ├── register.html
+    ├── admin_dashboard.html
+    ├── admin_attendance.html
+    ├── admin_students.html
+    └── student_dashboard.html
 ```
 
-### Step 2: Install Dependencies
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Prerequisites
+
+- Python 3.14
+- XAMPP (Apache + MySQL)
+- Git
+
+### 2. Clone the Repository
 
 ```bash
-# Install required packages
+git clone https://github.com/yourusername/smart-attendance-system.git
+cd smart-attendance-system
+```
+
+### 3. Create Virtual Environment
+
+```bash
+python -m venv venv
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # Mac/Linux
+```
+
+### 4. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-**Note**: Installing `face_recognition` requires dlib, which may need additional dependencies:
+### 5. Setup Database
 
-**For Windows:**
-```bash
-pip install cmake
-pip install dlib
-pip install face_recognition
+1. Open **XAMPP Control Panel**
+2. Start **Apache** and **MySQL**
+3. Open **phpMyAdmin** → http://localhost/phpmyadmin
+4. Create a new database named `attendance_db`
+5. Tables are created **automatically** when you run the app
+
+### 6. Configure Email
+
+Open `email_config.py` and update:
+
+```python
+EMAIL_ADDRESS  = "your_email@gmail.com"
+EMAIL_PASSWORD = "your_gmail_app_password"
 ```
 
-**For Linux/Mac:**
-```bash
-sudo apt-get install cmake
-pip install dlib
-pip install face_recognition
-```
+> **How to get Gmail App Password:**
+> Google Account → Security → 2-Step Verification → App Passwords → Generate
 
-### Step 3: Configure Email Settings
-
-Create a `.env` file in the root directory:
-
-```env
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
-SECRET_KEY=your-secret-key-here
-```
-
-**To get Gmail App Password:**
-1. Go to Google Account settings
-2. Security > 2-Step Verification
-3. App passwords > Select app: Mail
-4. Copy the generated password
-
-### Step 4: Create Required Directories
-
-```bash
-mkdir -p static/images/students
-mkdir -p config
-mkdir -p database
-mkdir -p face_recognition
-mkdir -p email_service
-mkdir -p templates
-mkdir -p utils
-```
-
-### Step 5: Run the Application
+### 7. Run the Application
 
 ```bash
 python app.py
 ```
 
-The application will be available at `http://localhost:5000`
+Open browser → **http://localhost:5000**
 
-## Default Login Credentials
+---
 
-**Admin Account:**
-- Email: `admin@attendance.com`
-- Password: `admin123`
+## 📋 How to Use
 
-**Note**: Change these credentials in production!
+### First Time Setup
 
-## Usage Guide
-
-### For Students
-
-1. **Register**:
-   - Go to `/register`
-   - Fill in student ID, name, email, password
-   - Upload a clear photo of your face
-   - Submit registration
-
-2. **Login**:
-   - Use your registered email and password
-   - Access student dashboard
-
-3. **Mark Attendance**:
-   - Click "Start Face Recognition" during active session
-   - Look at the webcam
-   - System will detect and verify your face
-   - Attendance marked automatically
-   - Receive confirmation email
-
-### For Administrators
-
-1. **Login**:
-   - Use admin credentials
-   - Access admin dashboard
-
-2. **View Students**:
-   - Navigate to Students section
-   - View all registered students
-
-3. **Mark Absent Students**:
-   - Click "Mark Absent & Send Emails"
-   - System automatically marks absent students
-   - Sends email notifications to all absent students
-
-4. **Generate Reports**:
-   - Navigate to Reports section
-   - Select date range
-   - View/download attendance reports
-
-## Configuration
-
-### Attendance Sessions
-
-Edit `config/config.py` to modify session times:
-
-```python
-ATTENDANCE_SESSIONS = {
-    'morning': {'start': '08:00', 'end': '09:00'},
-    'afternoon': {'start': '13:00', 'end': '14:00'},
-    'evening': {'start': '17:00', 'end': '18:00'}
-}
+```
+1. Run app.py
+2. Register student at http://localhost:5000/register
+3. Run capture_faces.py → enter roll number → capture 20 face images
+4. Run train_model.py → trains the recognition model
+5. Login as admin → Start Face Recognition
 ```
 
-### Face Recognition Tolerance
+### Daily Use
 
-Adjust recognition strictness (lower = more strict):
-
-```python
-TOLERANCE = 0.6  # Range: 0.0 to 1.0
+```
+1. Start XAMPP → Apache + MySQL
+2. Activate venv → python app.py
+3. Admin Dashboard → Start Face Recognition
+4. Press Q when done
+5. Click Close Attendance → Pending becomes Absent
+6. Click Send Absent Emails → emails sent automatically
 ```
 
-## Troubleshooting
+### Adding New Student
 
-### Face Recognition Not Working
-- Ensure good lighting
-- Look directly at the camera
-- Avoid wearing masks or sunglasses
-- Check if webcam is accessible
+```
+1. Register on website
+2. Run capture_faces.py
+3. Run train_model.py
+4. Done!
+```
 
-### Email Not Sending
-- Verify Gmail app password
-- Check EMAIL_USER and EMAIL_PASS in .env
-- Enable "Less secure app access" or use App Password
-- Check spam folder
+---
 
-### Database Errors
-- Delete `attendance.db` and restart to recreate
-- Check file permissions
+## 🔑 Default Admin Credentials
 
-### Installation Issues
-- For dlib errors: Install cmake first
-- For OpenCV errors: Try `pip install opencv-python-headless`
-- Use Python 3.8-3.10 for best compatibility
+| Field | Value |
+|-------|-------|
+| Email | admin@gmail.com |
+| Password | admin123 |
 
-## API Endpoints
+---
 
-- `GET /` - Home page
-- `GET/POST /login` - Login page
-- `GET/POST /register` - Registration page
-- `GET /logout` - Logout
-- `GET /student/dashboard` - Student dashboard
-- `GET /admin/dashboard` - Admin dashboard
-- `POST /mark_attendance` - Mark attendance via face recognition
-- `GET /admin/mark_absent` - Mark absent students and send emails
-- `GET /admin/students` - View all students
-- `GET /admin/reports` - Generate reports
+## 📊 Attendance Status Flow
 
-## Security Considerations
+```
+Morning → All students: ⏳ PENDING
+              ↓
+    Start Face Recognition
+              ↓
+    Face matched → ✅ PRESENT
+              ↓
+    Click Close Attendance
+              ↓
+    Remaining → ❌ ABSENT
+              ↓
+    Send Absent Emails → 📧 Email sent
+```
 
-1. **Production Deployment**:
-   - Change default admin credentials
-   - Use strong SECRET_KEY
-   - Enable HTTPS
-   - Use production database (PostgreSQL/MySQL)
-   - Set DEBUG=False
+---
 
-2. **Password Security**:
-   - Passwords are hashed using Werkzeug
-   - Never store plain text passwords
+## 📸 Screenshots
 
-3. **Face Data**:
-   - Face encodings stored as text in database
-   - Student photos stored locally
-   - Consider encryption for sensitive data
+> Admin Dashboard — shows total, present, absent, pending stats with live progress bar
 
-## Future Enhancements
+> Face Recognition — camera window opens, detects and marks attendance in real time
 
-- [ ] Multi-camera support
-- [ ] Mobile app integration
-- [ ] Biometric authentication
-- [ ] Advanced reporting and analytics
-- [ ] Integration with LMS
-- [ ] Parent portal
-- [ ] SMS notifications
-- [ ] Geolocation verification
-- [ ] Export to Excel/PDF
+> Student Dashboard — shows attendance percentage, history, and 75% threshold warning
 
+---
 
-## Support
+## 📦 Requirements
 
-For issues or questions, please create an issue in the project repository.
+```
+Flask==3.1.3
+mysql-connector-python==9.6.0
+opencv-contrib-python==4.13.0.92
+numpy==2.4.2
+Werkzeug==3.1.6
+```
 
-## Contributors
+---
 
-Created as a smart attendance management solution with face recognition technology.
+## ⚠️ Important Notes
+
+- Make sure **XAMPP MySQL is running** before starting the app
+- Run `capture_faces.py` and `train_model.py` again after adding any new student
+- Face recognition accuracy depends on **good lighting** and **clear face visibility**
+- Confidence threshold is set to `< 45` — lower = stricter matching
+
+---
+
+## 🙏 Acknowledgements
+
+- [OpenCV](https://opencv.org/) — Face detection and recognition
+- [Flask](https://flask.palletsprojects.com/) — Web framework
+- [Bootstrap](https://getbootstrap.com/) — Frontend UI
+- [XAMPP](https://www.apachefriends.org/) — Local MySQL server
+
+---
+
+<p align="center">Made with ❤️ by Patel Utsav & Patel Renish | CSPIT AIML 2024</p>
