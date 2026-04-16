@@ -29,13 +29,13 @@ while True:
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
 
     for (x, y, w, h) in faces:
-        if w < 100 or h < 100:
+        if w < 120 or h < 120: # //changes from 100 to 150
             continue
 
         face_img   = gray[y:y+h, x:x+w]
         student_id, confidence = recognizer.predict(face_img)
 
-        if confidence < 45:
+        if confidence < 35: # //changes from 45 to 35 for better accuracy
             cursor.execute("SELECT name FROM students WHERE id = %s", (student_id,))
             result = cursor.fetchone()
 
