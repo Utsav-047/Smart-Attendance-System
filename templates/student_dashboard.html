@@ -1,62 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Student Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>My Attendance</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background: #0b3d91; }
+    .card { border: none; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .stat-box { text-align: center; padding: 20px; }
+    .badge-present { background:#d1fae5; color:#065f46; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-absent  { background:#fee2e2; color:#991b1b; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-pending { background:#fef3c7; color:#92400e; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+  </style>
 </head>
-<body class="bg-light">
-
-<nav class="navbar navbar-dark bg-primary px-4">
-    <span class="navbar-brand">Student Dashboard</span>
-    <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+<body>
+<nav class="navbar navbar-dark px-4 py-3">
+  <span class="navbar-brand fw-bold"><i class="fas fa-camera me-2"></i>SmartAttendance</span>
+  <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
 </nav>
+<div class="container mt-4" style="max-width:800px">
 
-<div class="container mt-4">
-
-    <div class="card shadow-sm mb-4 p-3">
-        <h4>Welcome {{ name }}</h4>
-        <p class="mb-0"><b>Roll Number:</b> {{ roll }}</p>
+  <div class="card p-4 mb-4" style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:white">
+    <div class="d-flex align-items-center">
+      <div style="width:55px;height:55px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;margin-right:15px">
+        {{ name[0].upper() }}
+      </div>
+      <div>
+        <h5 class="mb-0 fw-bold">{{ name }}</h5>
+        <small style="opacity:0.85">Roll: {{ roll }}</small>
+      </div>
     </div>
+  </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            Your Attendance History
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-bordered mb-0 text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% if records %}
-                    {% for row in records %}
-                    <tr>
-                        <td>{{ row[0] }}</td>
-                        <td>
-                            {% if row[1] == "Present" %}
-                                <span class="badge bg-success">Present</span>
-                            {% else %}
-                                <span class="badge bg-danger">Absent</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="2">No attendance records found</td>
-                    </tr>
-                {% endif %}
-                </tbody>
-            </table>
-        </div>
+  <div class="row g-3 mb-4">
+    <div class="col-4">
+      <div class="card stat-box">
+        <div class="fw-bold fs-3 text-primary">{{ total }}</div>
+        <div class="text-muted small">Total Days</div>
+      </div>
     </div>
+    <div class="col-4">
+      <div class="card stat-box">
+        <div class="fw-bold fs-3 text-success">{{ present }}</div>
+        <div class="text-muted small">Present</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card stat-box">
+        <div class="fw-bold fs-3 {% if pct >= 75 %}text-success{% else %}text-danger{% endif %}">
+          {{ pct }}%
+        </div>
+        <div class="text-muted small">Attendance</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between mb-2">
+      <span class="fw-semibold">Attendance Rate</span>
+      <span class="fw-bold {% if pct >= 75 %}text-success{% else %}text-danger{% endif %}">
+        {{ pct }}% {% if pct < 75 %} ⚠️ Below 75%{% endif %}
+      </span>
+    </div>
+    <div class="progress" style="height:10px;border-radius:8px">
+      <div class="progress-bar {% if pct >= 75 %}bg-success{% else %}bg-danger{% endif %}"
+           style="width:{{ pct }}%;border-radius:8px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="px-4 pt-4 pb-2">
+        <h6 class="fw-bold mb-0">Attendance History</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>#</th><th>Date</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% if records %}
+              {% for row in records %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ row.date }}</td>
+                <td>
+                  {% if row.status == 'Present' %}
+                    <span class="badge-present">✓ Present</span>
+                  {% elif row.status == 'Absent' %}
+                    <span class="badge-absent">✗ Absent</span>
+                  {% else %}
+                    <span class="badge-pending">⏳ Pending</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="3" class="text-center py-4 text-muted">No attendance records found</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
 </div>
-
 </body>
 </html>
-
