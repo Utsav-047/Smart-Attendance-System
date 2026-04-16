@@ -1,178 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
-    <style>
-        body { background-color: #f8f9fa; }
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .stats-card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-        .stats-card:hover {
-            transform: translateY(-5px);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; margin: 0; }
+    .sidebar { width:230px; min-height:100vh; background:#0b3d91; position:fixed; top:0; left:0; padding-top:20px; z-index:100; }
+    .sidebar .brand { color:white; font-size:18px; font-weight:700; padding:15px 20px 25px; border-bottom:1px solid rgba(255,255,255,0.15); display:block; }
+    .sidebar a { display:block; color:rgba(255,255,255,0.75); padding:13px 20px; text-decoration:none; font-size:14px; border-left:3px solid transparent; transition:all 0.2s; }
+    .sidebar a:hover, .sidebar a.active { background:rgba(255,255,255,0.1); color:white; border-left-color:white; }
+    .sidebar a i { width:22px; margin-right:8px; }
+    .main { margin-left:230px; padding:30px; }
+    .topbar { background:white; padding:16px 24px; border-radius:12px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+    .stat-card { border-radius:14px; padding:24px; color:white; box-shadow:0 4px 15px rgba(0,0,0,0.12); border:none; }
+    .stat-card .icon { font-size:34px; opacity:0.8; }
+    .stat-card h2 { font-size:2.2rem; font-weight:700; margin:8px 0 4px; }
+    .stat-card p  { margin:0; opacity:0.85; font-size:14px; }
+    .badge-present { background:#d1fae5; color:#065f46; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-absent  { background:#fee2e2; color:#991b1b; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    .badge-pending { background:#fef3c7; color:#92400e; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+    #toast { position:fixed; bottom:30px; right:30px; z-index:9999; min-width:320px; display:none; border-radius:10px; font-size:14px; }
+  </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-2 sidebar p-4">
-                <h4 class="mb-4">Admin Portal</h4>
-                <div class="nav flex-column">
-                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link text-white active">
-                        <i class="bi bi-speedometer2"></i> Dashboard
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="nav-link text-white">
-                        <i class="bi bi-box-arrow-right"></i> Logout
-                    </a>
-                </div>
-            </div>
-            
-            <div class="col-md-10 p-4">
-                <h2 class="mb-4">Admin Dashboard</h2>
-                
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card stats-card text-white bg-primary">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6>Total Students</h6>
-                                        <h2>{{ total_students }}</h2>
-                                    </div>
-                                    <i class="bi bi-people fs-1"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <div class="card stats-card text-white bg-success">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6>Present Today</h6>
-                                        <h2>{{ today_present }}</h2>
-                                    </div>
-                                    <i class="bi bi-check-circle fs-1"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <div class="card stats-card text-white bg-warning">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6>Current Session</h6>
-                                        <h3>
-                                            {% if current_session %}
-                                                {{ current_session|capitalize }}
-                                            {% else %}
-                                                No Session
-                                            {% endif %}
-                                        </h3>
-                                    </div>
-                                    <i class="bi bi-clock fs-1"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3">
-                        <div class="card stats-card text-white bg-danger">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6>Absent Today</h6>
-                                        <h2>{{ total_students - today_present }}</h2>
-                                    </div>
-                                    <i class="bi bi-x-circle fs-1"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card stats-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <a href="{{ url_for('mark_absent_students') }}" class="btn btn-danger">
-                            <i class="bi bi-envelope"></i> Mark Absent & Send Emails
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="card stats-card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Recent Attendance Records</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Student ID</th>
-                                        <th>Name</th>
-                                        <th>Date</th>
-                                        <th>Session</th>
-                                        <th>Time</th>
-                                        <th>Status</th>
-                                        <th>Marked By</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for attendance, user in recent_attendance %}
-                                        <tr>
-                                            <td>{{ user.student_id }}</td>
-                                            <td>{{ user.name }}</td>
-                                            <td>{{ attendance.date.strftime('%Y-%m-%d') }}</td>
-                                            <td>{{ attendance.session|capitalize }}</td>
-                                            <td>{{ attendance.check_in_time.strftime('%H:%M:%S') }}</td>
-                                            <td>
-                                                {% if attendance.status == 'present' %}
-                                                    <span class="badge bg-success">Present</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger">Absent</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ attendance.marked_by }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
+<div class="sidebar">
+  <span class="brand"><i class="fas fa-camera me-2"></i>SmartAttendance</span>
+  <a href="/admin" class="active"><i class="fas fa-tachometer-alt"></i>Dashboard</a>
+  <a href="/admin/attendance"><i class="fas fa-calendar-check"></i>Attendance History</a>
+  <a href="/admin/students"><i class="fas fa-users"></i>All Students</a>
+  <a href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a>
+</div>
+
+<div class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div>
+      <h5 class="mb-0 fw-bold">Admin Dashboard</h5>
+      <small class="text-muted">{{ today }}</small>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary fw-semibold" onclick="startRecognition(this)">
+        <i class="fas fa-camera me-2"></i>Start Face Recognition
+      </button>
+      <button class="btn btn-warning fw-semibold text-dark" onclick="closeAttendance(this)">
+        <i class="fas fa-lock me-2"></i>Close Attendance
+      </button>
+      <button class="btn btn-danger fw-semibold" onclick="sendEmails(this)">
+        <i class="fas fa-envelope me-2"></i>Send Absent Emails
+      </button>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-3">
+      <div class="stat-card" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
+        <div class="icon"><i class="fas fa-users"></i></div>
+        <h2>{{ total_students }}</h2>
+        <p>Total Students</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="background:linear-gradient(135deg,#065f46,#10b981)">
+        <div class="icon"><i class="fas fa-user-check"></i></div>
+        <h2>{{ present_today }}</h2>
+        <p>Present Today</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="background:linear-gradient(135deg,#991b1b,#ef4444)">
+        <div class="icon"><i class="fas fa-user-times"></i></div>
+        <h2>{{ absent_today }}</h2>
+        <p>Absent Today</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card" style="background:linear-gradient(135deg,#92400e,#f59e0b)">
+        <div class="icon"><i class="fas fa-clock"></i></div>
+        <h2>{{ pending_today }}</h2>
+        <p>Pending</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  {% if total_students > 0 %}
+  <div class="card p-4 mb-4 border-0 shadow-sm" style="border-radius:12px">
+    <div class="d-flex justify-content-between mb-2">
+      <span class="fw-semibold">Today's Attendance Rate</span>
+      <span class="fw-bold">{{ ((present_today / total_students) * 100) | round(1) }}%</span>
+    </div>
+    <div class="progress" style="height:12px;border-radius:8px">
+      <div class="progress-bar bg-success"
+           style="width:{{ (present_today / total_students) * 100 }}%;border-radius:8px"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ATTENDANCE TABLE -->
+  <div class="card border-0 shadow-sm" style="border-radius:12px">
+    <div class="card-body p-0">
+      <div class="px-4 pt-4 pb-2">
+        <h6 class="fw-bold mb-0">Today's Attendance — {{ today }}</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-dark">
+            <tr><th>#</th><th>Name</th><th>Roll</th><th>Email</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for row in records %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ row.name }}</td>
+              <td><code>{{ row.roll }}</code></td>
+              <td>{{ row.email }}</td>
+              <td>
+                {% if row.status == 'Present' %}
+                  <span class="badge-present">✓ Present</span>
+                {% elif row.status == 'Absent' %}
+                  <span class="badge-absent">✗ Absent</span>
+                {% else %}
+                  <span class="badge-pending">⏳ Pending</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center py-5 text-muted">No students registered yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast" class="alert shadow-lg px-4 py-3" role="alert"></div>
+
+<script>
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.className = `alert alert-${type} shadow-lg px-4 py-3`;
+  t.innerHTML = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; location.reload(); }, 4000);
+}
+
+async function startRecognition(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting...';
+  try {
+    const res  = await fetch('/admin/start-recognition', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) showToast('❌ ' + data.error, 'danger');
+    else showToast('📷 ' + data.message, 'info');
+  } catch(e) { showToast('❌ ' + e.message, 'danger'); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-camera me-2"></i>Start Face Recognition';
+}
+
+async function closeAttendance(btn) {
+  if (!confirm('Close attendance? All Pending students will be marked Absent.')) return;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Closing...';
+  try {
+    const res  = await fetch('/admin/close-attendance', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) showToast('❌ ' + data.error, 'danger');
+    else showToast('🔒 ' + data.message, 'warning');
+  } catch(e) { showToast('❌ ' + e.message, 'danger'); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-lock me-2"></i>Close Attendance';
+}
+
+async function sendEmails(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+  try {
+    const res  = await fetch('/admin/send-emails', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) showToast('❌ ' + data.error, 'danger');
+    else showToast('📧 ' + data.message, 'success');
+  } catch(e) { showToast('❌ ' + e.message, 'danger'); }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-envelope me-2"></i>Send Absent Emails';
+}
+</script>
 </body>
 </html>
