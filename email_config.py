@@ -1,3 +1,3 @@
-EMAIL_ADDRESS = "patelutsav684@gmail.com"
-EMAIL_PASSWORD = "nyspnkcendnyixvz"
+EMAIL_ADDRESS = "abc684@gmail.com"
+EMAIL_PASSWORD = "your app password"
 
