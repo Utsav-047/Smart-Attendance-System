@@ -7,7 +7,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email_config import EMAIL_ADDRESS, EMAIL_PASSWORD
+from capture_faces import capture_faces
+from train_model import train_model
 import subprocess
+import threading
 import sys
 import os
 
@@ -17,11 +20,17 @@ app.secret_key = "attendance_secret_key"
 ADMIN_EMAIL    = "admin@gmail.com"
 ADMIN_PASSWORD = "admin123"
 
+# ─────────────────────────────────────────
+# MYSQL CONNECTION
+# ─────────────────────────────────────────
 def get_db():
     return mysql.connector.connect(
         host="localhost", user="root", password="", database="attendance_db"
     )
 
+# ─────────────────────────────────────────
+# CREATE DATABASE + TABLES ON STARTUP
+# ─────────────────────────────────────────
 def create_tables():
     conn = mysql.connector.connect(host="localhost", user="root", password="")
     c = conn.cursor()
@@ -51,22 +60,27 @@ def create_tables():
 
 create_tables()
 
-# ── LOGIN ──
+# ─────────────────────────────────────────
+# LOGIN
+# ─────────────────────────────────────────
 @app.route("/", methods=["GET", "POST"])
 def login():
     error = None
     if request.method == "POST":
         email    = request.form["email"]
         password = request.form["password"]
+
         if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
             session.clear()
             session["admin"] = True
             return redirect("/admin")
+
         conn = get_db()
         c = conn.cursor(dictionary=True)
         c.execute("SELECT * FROM students WHERE email = %s", (email,))
         user = c.fetchone()
         c.close(); conn.close()
+
         if user and check_password_hash(user["password"], password):
             session.clear()
             session["user_id"]   = user["id"]
@@ -75,54 +89,138 @@ def login():
             return redirect("/student")
         else:
             error = "Invalid email or password"
+
     return render_template("login.html", error=error)
 
-# ── REGISTER ──
+# ─────────────────────────────────────────
+# REGISTER
+# ─────────────────────────────────────────
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
+    registered = request.args.get("registered") == "true"
+    trained = request.args.get("trained") == "true"
+
     if request.method == "POST":
-        name     = request.form["name"]
-        roll     = request.form["roll"]
-        email    = request.form["email"]
-        password = generate_password_hash(request.form["password"])
+        name          = request.form["name"]
+        roll          = request.form["roll"]
+        email         = request.form["email"]
+        password      = generate_password_hash(request.form["password"])
+        face_captured = request.form.get("face_captured") == "1"
+
         try:
             conn = get_db()
             c = conn.cursor()
-            c.execute("INSERT INTO students (name, roll, email, password) VALUES (%s,%s,%s,%s)",
-                      (name, roll, email, password))
+            c.execute(
+                "INSERT INTO students (name, roll, email, password) VALUES (%s,%s,%s,%s)",
+                (name, roll, email, password)
+            )
             conn.commit()
             c.close(); conn.close()
-            return redirect("/")
+
+            if face_captured:
+                def run_training():
+                    try:
+                        train_model()
+                        print("Model training completed!")
+                    except Exception as e:
+                        print(f"Training error: {e}")
+
+                threading.Thread(target=run_training, daemon=True).start()
+                return redirect("/register?registered=true&trained=true")
+
+            return redirect("/register?registered=true")
         except mysql.connector.IntegrityError:
             error = "Roll number or email already registered"
-    return render_template("register.html", error=error)
 
-# ── STUDENT DASHBOARD ──
+    return render_template("register.html", error=error, registered=registered, trained=trained)
+
+# ─────────────────────────────────────────
+# CAPTURE FACE  (called from register page button)
+# Runs in a separate thread so browser doesn't freeze
+# ─────────────────────────────────────────
+@app.route("/capture_face", methods=["POST"])
+def capture_face():
+    try:
+        data = request.get_json()
+        roll = data.get("roll", "").strip()
+
+        if not roll:
+            return jsonify({"error": "Roll number is required"}), 400
+
+        # Run capture in separate thread so web server doesn't block
+        def run_capture():
+            try:
+                capture_faces(roll)
+            except Exception as e:
+                print(f"Capture error: {e}")
+
+        t = threading.Thread(target=run_capture)
+        t.start()
+
+        return jsonify({"message": f"Camera opened for {roll}! Look at the camera. 20 photos will be captured."})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ─────────────────────────────────────────
+# TRAIN MODEL  (called after capture is done)
+# ─────────────────────────────────────────
+@app.route("/train_model_route", methods=["POST"])
+def train_model_route():
+    try:
+        # Run training in separate thread
+        def run_training():
+            try:
+                train_model()
+                print("Model training completed!")
+            except Exception as e:
+                print(f"Training error: {e}")
+
+        t = threading.Thread(target=run_training)
+        t.start()
+        t.join(timeout=60)  # Wait max 60 seconds
+
+        return jsonify({"message": "Model trained successfully! Student is ready for face recognition."})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ─────────────────────────────────────────
+# STUDENT DASHBOARD
+# ─────────────────────────────────────────
 @app.route("/student")
 def student_dashboard():
     if "user_id" not in session:
-        return redirect("/")
+        return redirect("/register?registered=true")
+
     conn = get_db()
     c = conn.cursor(dictionary=True)
-    c.execute("SELECT date, status FROM attendance WHERE student_id = %s ORDER BY date DESC",
-              (session["user_id"],))
+    c.execute(
+        "SELECT date, status FROM attendance WHERE student_id = %s ORDER BY date DESC",
+        (session["user_id"],)
+    )
     records = c.fetchall()
     c.close(); conn.close()
+
     total   = len(records)
     present = sum(1 for r in records if r["status"] == "Present")
     pct     = round((present / total * 100) if total else 0, 1)
+
     return render_template("student_dashboard.html",
                            name=session["user_name"],
                            roll=session["user_roll"],
                            records=records,
                            total=total, present=present, pct=pct)
 
-# ── ADMIN DASHBOARD ──
+# ─────────────────────────────────────────
+# ADMIN DASHBOARD
+# ─────────────────────────────────────────
 @app.route("/admin")
 def admin_dashboard():
     if "admin" not in session:
-        return redirect("/")
+        return redirect("/register?registered=true")
+
     today = str(date.today())
     conn  = get_db()
     c     = conn.cursor(dictionary=True)
@@ -130,10 +228,16 @@ def admin_dashboard():
     c.execute("SELECT COUNT(*) AS cnt FROM students")
     total_students = c.fetchone()["cnt"]
 
-    c.execute("SELECT COUNT(DISTINCT student_id) AS cnt FROM attendance WHERE date=%s AND status='Present'", (today,))
+    c.execute(
+        "SELECT COUNT(DISTINCT student_id) AS cnt FROM attendance WHERE date=%s AND status='Present'",
+        (today,)
+    )
     present_today = c.fetchone()["cnt"]
 
-    c.execute("SELECT COUNT(DISTINCT student_id) AS cnt FROM attendance WHERE date=%s AND status='Absent'", (today,))
+    c.execute(
+        "SELECT COUNT(DISTINCT student_id) AS cnt FROM attendance WHERE date=%s AND status='Absent'",
+        (today,)
+    )
     absent_today = c.fetchone()["cnt"]
 
     pending_today = total_students - present_today - absent_today
@@ -156,111 +260,154 @@ def admin_dashboard():
                            records=records,
                            today=today)
 
-# ── CLOSE ATTENDANCE (Pending → Absent) ──
-@app.route("/admin/close-attendance", methods=["POST"])
-def close_attendance():
-    if "admin" not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    today = str(date.today())
-    conn  = get_db()
-    c     = conn.cursor(dictionary=True)
-    c.execute("SELECT id FROM students")
-    all_students = c.fetchall()
-    c.execute("SELECT student_id FROM attendance WHERE date=%s", (today,))
-    already_marked = {r["student_id"] for r in c.fetchall()}
-    pending = [s for s in all_students if s["id"] not in already_marked]
-    count = 0
-    for student in pending:
-        try:
-            c.execute("INSERT INTO attendance (student_id, date, status) VALUES (%s, %s, 'Absent')",
-                      (student["id"], today))
-            count += 1
-        except mysql.connector.IntegrityError:
-            pass
-    conn.commit()
-    c.close(); conn.close()
-    return jsonify({"message": f"Attendance closed! {count} students marked Absent.", "count": count})
-
-# ── SEND ABSENT EMAILS ──
-@app.route("/admin/send-emails", methods=["POST"])
-def send_emails():
-    if "admin" not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    today = str(date.today())
-    conn  = get_db()
-    c     = conn.cursor(dictionary=True)
-    c.execute("SELECT id, name, email FROM students")
-    all_students = c.fetchall()
-    c.execute("SELECT student_id FROM attendance WHERE date=%s AND status='Present'", (today,))
-    present_ids = {r["student_id"] for r in c.fetchall()}
-    c.close(); conn.close()
-    absentees = [s for s in all_students if s["id"] not in present_ids]
-    if not absentees:
-        return jsonify({"sent": 0, "message": "All students are present today!"})
-    try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        sent = 0
-        for student in absentees:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"Attendance Alert - Absent on {today}"
-            msg["From"]    = EMAIL_ADDRESS
-            msg["To"]      = student["email"]
-            html_body = f"""
-<html><body style="font-family:Arial,sans-serif;background:#f4f6f9;padding:20px">
-  <div style="max-width:500px;margin:auto;background:white;border-radius:12px;padding:30px">
-    <h2 style="color:#dc3545">Attendance Alert</h2>
-    <p>Dear <strong>{student['name']}</strong>,</p>
-    <p>You were marked <strong style="color:#dc3545">ABSENT</strong> on <strong>{today}</strong>.</p>
-    <p>If this is a mistake, please contact your administrator.</p>
-    <p style="color:#888;font-size:12px">Smart Attendance System - CSPIT AIML</p>
-  </div>
-</body></html>"""
-            msg.attach(MIMEText(html_body, "html"))
-            server.sendmail(EMAIL_ADDRESS, student["email"], msg.as_string())
-            sent += 1
-        server.quit()
-        return jsonify({"sent": sent, "message": f"Emails sent to {sent} absent students."})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ── START FACE RECOGNITION ──
+# ─────────────────────────────────────────
+# START FACE RECOGNITION
+# ─────────────────────────────────────────
 @app.route("/admin/start-recognition", methods=["POST"])
 def start_recognition():
     if "admin" not in session:
         return jsonify({"error": "Unauthorized"}), 401
     try:
-        subprocess.Popen([sys.executable, "recognize_attendance.py"],
-                         cwd=os.path.dirname(os.path.abspath(__file__)))
+        subprocess.Popen(
+            [sys.executable, "recognize_attendance.py"],
+            cwd=os.path.dirname(os.path.abspath(__file__))
+        )
         return jsonify({"message": "Camera window opened! Press Q to stop when done."})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ── ATTENDANCE HISTORY ──
+# ─────────────────────────────────────────
+# CLOSE ATTENDANCE  (Pending → Absent)
+# ─────────────────────────────────────────
+@app.route("/admin/close-attendance", methods=["POST"])
+def close_attendance():
+    if "admin" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    today = str(date.today())
+    conn  = get_db()
+    c     = conn.cursor(dictionary=True)
+
+    c.execute("SELECT id FROM students")
+    all_students = c.fetchall()
+
+    c.execute("SELECT student_id FROM attendance WHERE date=%s", (today,))
+    already_marked = {r["student_id"] for r in c.fetchall()}
+
+    pending_students = [s for s in all_students if s["id"] not in already_marked]
+    count = 0
+
+    for student in pending_students:
+        try:
+            c.execute(
+                "INSERT INTO attendance (student_id, date, status) VALUES (%s, %s, 'Absent')",
+                (student["id"], today)
+            )
+            count += 1
+        except mysql.connector.IntegrityError:
+            pass
+
+    # Also update any leftover Pending to Absent
+    c.execute(
+        "UPDATE attendance SET status='Absent' WHERE date=%s AND status='Pending'",
+        (today,)
+    )
+
+    conn.commit()
+    c.close(); conn.close()
+
+    return jsonify({
+        "message": f"Attendance closed! {count} students marked Absent.",
+        "count": count
+    })
+
+# ─────────────────────────────────────────
+# SEND ABSENT EMAILS
+# ─────────────────────────────────────────
+@app.route("/admin/send-emails", methods=["POST"])
+def send_emails():
+    if "admin" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    today = str(date.today())
+    conn  = get_db()
+    c     = conn.cursor(dictionary=True)
+
+    c.execute("SELECT id, name, email FROM students")
+    all_students = c.fetchall()
+
+    c.execute(
+        "SELECT student_id FROM attendance WHERE date=%s AND status='Present'", (today,)
+    )
+    present_ids = {r["student_id"] for r in c.fetchall()}
+    c.close(); conn.close()
+
+    absentees = [s for s in all_students if s["id"] not in present_ids]
+
+    if not absentees:
+        return jsonify({"sent": 0, "message": "All students are present today!"})
+
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        sent = 0
+
+        for student in absentees:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"Attendance Alert - Absent on {today}"
+            msg["From"]    = EMAIL_ADDRESS
+            msg["To"]      = student["email"]
+
+            html_body = f"""
+<html>
+<body style="font-family:Arial,sans-serif;background:#f4f6f9;padding:20px">
+  <div style="max-width:500px;margin:auto;background:white;border-radius:12px;padding:30px;box-shadow:0 2px 10px rgba(0,0,0,0.1)">
+    <h2 style="color:#dc3545;margin-top:0">Attendance Alert</h2>
+    <p>Dear <strong>{student['name']}</strong>,</p>
+    <p>You were marked <strong style="color:#dc3545">ABSENT</strong> on <strong>{today}</strong>.</p>
+    <p>If you believe this is a mistake, please contact your administrator.</p>
+    <p style="color:#888;font-size:12px">Smart Attendance System - CSPIT AIML</p>
+  </div>
+</body>
+</html>"""
+            msg.attach(MIMEText(html_body, "html"))
+            server.sendmail(EMAIL_ADDRESS, student["email"], msg.as_string())
+            sent += 1
+
+        server.quit()
+        return jsonify({"sent": sent, "message": f"Emails sent to {sent} absent students."})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ─────────────────────────────────────────
+# ATTENDANCE HISTORY
+# ─────────────────────────────────────────
 @app.route("/admin/attendance")
 def admin_attendance():
     if "admin" not in session:
-        return redirect("/")
-    filter_date = request.args.get("date", str(date.today()))
+        return redirect("/register?registered=true")
+
     conn = get_db()
     c = conn.cursor(dictionary=True)
     c.execute("""
-        SELECT s.name, s.roll,
-               COALESCE(a.status, 'Pending') AS status
-        FROM students s
-        LEFT JOIN attendance a ON s.id = a.student_id AND a.date = %s
-        ORDER BY s.name
-    """, (filter_date,))
+        SELECT s.name, s.roll, s.email, a.date, a.status
+        FROM attendance a
+        JOIN students s ON s.id = a.student_id
+        ORDER BY a.date DESC
+    """)
     records = c.fetchall()
     c.close(); conn.close()
-    return render_template("admin_attendance.html", records=records, filter_date=filter_date)
+    return render_template("admin_attendance.html", records=records)
 
-# ── ALL STUDENTS ──
+# ─────────────────────────────────────────
+# ALL STUDENTS
+# ─────────────────────────────────────────
 @app.route("/admin/students")
 def admin_students():
     if "admin" not in session:
-        return redirect("/")
+        return redirect("/register?registered=true")
     conn = get_db()
     c = conn.cursor(dictionary=True)
     c.execute("SELECT * FROM students ORDER BY name")
@@ -268,11 +415,13 @@ def admin_students():
     c.close(); conn.close()
     return render_template("admin_students.html", students=students)
 
-# ── DELETE STUDENT ──
+# ─────────────────────────────────────────
+# DELETE STUDENT
+# ─────────────────────────────────────────
 @app.route("/admin/delete/<int:sid>", methods=["POST"])
 def delete_student(sid):
     if "admin" not in session:
-        return redirect("/")
+        return redirect("/register?registered=true")
     conn = get_db()
     c = conn.cursor()
     c.execute("DELETE FROM attendance WHERE student_id = %s", (sid,))
@@ -281,11 +430,13 @@ def delete_student(sid):
     c.close(); conn.close()
     return redirect("/admin/students")
 
-# ── LOGOUT ──
+# ─────────────────────────────────────────
+# LOGOUT
+# ─────────────────────────────────────────
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("/")
+    return redirect("/register?registered=true")
 
 if __name__ == "__main__":
     app.run(debug=True)
