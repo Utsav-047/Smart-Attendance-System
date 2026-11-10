@@ -1,155 +1,233 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Register | Smart Attendance</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: linear-gradient(135deg, #0b3d91, #1e88e5);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-    .step-badge {
-      background: #0b3d91;
-      color: white;
-      border-radius: 50%;
-      width: 24px; height: 24px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      margin-right: 8px;
-    }
-    .step-badge.done { background: #198754; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Student Registration - Smart Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/camera.css') }}">
 </head>
-<body>
-<div class="card p-4" style="width:440px">
+<body class="min-h-screen flex flex-col justify-between text-slate-800 antialiased">
 
-  <div class="text-center mb-3">
-    <div style="color:#0b3d91;font-size:22px;font-weight:700">📷 SmartAttendance</div>
-    <p class="text-muted small">Student Registration</p>
-  </div>
-
-  {% if error %}
-  <div class="alert alert-danger py-2 small">{{ error }}</div>
-  {% endif %}
-
-  <!-- STEP INDICATORS -->
-  <div class="mb-3 p-3 rounded" style="background:#f8f9fa;font-size:13px">
-    <div class="mb-1"><span class="step-badge done" id="step1badge">1</span> Capture Face</div>
-    <div><span class="step-badge" id="step2badge">2</span> Register and Train Model</div>
-  </div>
-
-  <!-- REGISTRATION FORM -->
-  <form method="POST" id="registerForm">
-    <input type="hidden" name="face_captured" id="faceCapturedInput" value="0">
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Full Name</label>
-      <input type="text" name="name" id="nameInput" class="form-control" placeholder="Patel Utsav" required>
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-3 text-slate-900">
+          <div class="w-10 h-10 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div>
+            <span class="font-bold text-slate-900 text-lg tracking-tight">Smart Attendance</span>
+            <span class="text-xs block text-slate-500 font-medium">Department of AI &amp; Machine Learning</span>
+          </div>
+        </a>
+      </div>
+      <div class="flex items-center gap-2 text-sm">
+        <span class="text-slate-500 hidden sm:inline">Already registered?</span>
+        <a href="/" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition">
+          <i class="fa-solid fa-arrow-right-to-bracket text-xs text-slate-400"></i> Sign In
+        </a>
+      </div>
     </div>
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Roll Number</label>
-      <input type="text" name="roll" id="rollInput" class="form-control" placeholder="24AIML047" required>
-    </div>
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Email</label>
-      <input type="email" name="email" class="form-control" placeholder="student@email.com" required>
-    </div>
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Password</label>
-      <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Student Enrollment &amp; Face Registration</h1>
+      <p class="text-sm text-slate-500 mt-1">Register your institutional profile and biometric facial signature for automated attendance verification.</p>
     </div>
 
-    <!-- STEP 2: REGISTER BUTTON -->
-    <button type="submit" id="registerBtn" class="btn btn-primary w-100 py-2 fw-bold mb-2" disabled>
-      ✅ Register and Train Model
-    </button>
-  </form>
+    {% if error %}
+    <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3">
+      <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
+      <div>
+        <p class="font-semibold">Registration Incomplete</p>
+        <p class="text-red-600 mt-0.5">{{ error }}</p>
+      </div>
+    </div>
+    {% endif %}
 
-  <!-- STEP 1: CAPTURE FACE BUTTON -->
-  <button id="captureBtn" onclick="captureFace()" class="btn btn-warning w-100 py-2 fw-bold mb-2">
-    📸 Capture Face First
-  </button>
+    {% if registered %}
+    <div class="mb-6 p-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-start gap-3">
+      <i class="fa-solid fa-circle-check text-emerald-600 text-lg mt-0.5"></i>
+      <div>
+        <p class="font-bold text-base text-emerald-900">Registration Successful</p>
+        <p class="mt-1 text-emerald-700">Your profile and biometric face encodings have been securely stored in the system. You can now sign in.</p>
+        <a href="/" class="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold text-xs transition">
+          <i class="fa-solid fa-arrow-right text-xs"></i> Proceed to Sign In
+        </a>
+      </div>
+    </div>
+    {% endif %}
 
-  <!-- STATUS MESSAGE -->
-  <div id="statusMsg" class="text-center mt-2" style="font-size:13px;min-height:20px"></div>
+    <form method="POST" id="registrationForm" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="face_captured" id="faceCapturedInput" value="0">
 
-  <div class="text-center mt-2">
-    <small class="text-muted">Already registered? <a href="/">Login here</a></small>
-  </div>
-</div>
+      <!-- Column 1: Academic & Account Details (7 cols) -->
+      <div class="lg:col-span-7 space-y-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+        
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">1</span>
+            Academic Information
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">Please enter your verified university enrollment details.</p>
+        </div>
 
-<script>
-  const registered = {{ 'true' if registered else 'false' }};
-  const trained = {{ 'true' if trained else 'false' }};
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="name">Full Name</label>
+            <input type="text" id="name" name="name" required placeholder="e.g. Patel Utsav"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="roll">Student ID / Roll No</label>
+            <input type="text" id="roll" name="roll" required placeholder="e.g. 24AIML047"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition uppercase">
+          </div>
+        </div>
 
-  window.onload = function() {
-    document.getElementById('registerBtn').disabled = true;
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="email">Institutional Email</label>
+            <input type="email" id="email" name="email" required placeholder="student@charusat.edu.in"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="student_class">Class / Division</label>
+            <input type="text" id="student_class" name="student_class" placeholder="e.g. 4AIML-A"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition">
+          </div>
+        </div>
 
-    if (registered && trained) {
-      document.getElementById('statusMsg').innerHTML =
-        '<span class="text-success">🎉 Registration complete and model training started. You can now <a href="/">login</a>.</span>';
-      document.getElementById('step2badge').classList.add('done');
-      document.getElementById('step2badge').innerText = '✓';
-      document.getElementById('captureBtn').disabled = true;
-      document.getElementById('registerBtn').disabled = true;
-    }
-  }
+        <div class="pt-4 border-t border-slate-100">
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2 mb-1">
+            <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">2</span>
+            Security Credentials
+          </h2>
+          <p class="text-xs text-slate-500 mb-4">Choose a strong password to protect your attendance records.</p>
 
-  async function captureFace() {
-    const roll = document.getElementById('rollInput').value.trim();
-    if (!roll) {
-      alert('Please enter your Roll Number first!');
-      return;
-    }
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="password">Password</label>
+              <input type="password" id="password" name="password" required placeholder="Minimum 6 characters"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="confirm_password">Confirm Password</label>
+              <input type="password" id="confirm_password" name="confirm_password" required placeholder="Re-enter password"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition">
+            </div>
+          </div>
+        </div>
 
-    const btn = document.getElementById('captureBtn');
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Opening Camera...';
-    document.getElementById('statusMsg').innerHTML =
-      '<span class="text-warning">📷 Camera opening... Look at the camera! 20 photos will be taken automatically.</span>';
+      </div>
 
-    try {
-      const res = await fetch('/capture_face', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roll: roll })
-      });
-      const data = await res.json();
+      <!-- Column 2: WebRTC Biometric Face Capture (5 cols) -->
+      <div class="lg:col-span-5 flex flex-col justify-between bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+        
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">3</span>
+              Facial Biometric Setup
+            </h2>
+            <span id="captureStatusBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              Pending
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">Position your face inside the frame in a well-lit area.</p>
 
-      if (data.error) {
-        document.getElementById('statusMsg').innerHTML =
-          `<span class="text-danger">❌ ${data.error}</span>`;
-        btn.disabled = false;
-        btn.innerHTML = '📸 Capture Face First';
-      } else {
-        document.getElementById('statusMsg').innerHTML =
-          `<span class="text-info">📷 ${data.message} Wait for camera to finish...</span>`;
-        document.getElementById('faceCapturedInput').value = '1';
+          <!-- Camera Viewport Box -->
+          <div class="relative w-full aspect-[4/3] bg-slate-900 rounded-xl overflow-hidden border border-slate-300 flex items-center justify-center">
+            
+            <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+            
+            <!-- Canvas for snapshot extraction -->
+            <canvas id="snapshotCanvas" class="hidden"></canvas>
 
-        setTimeout(() => {
-          document.getElementById('registerBtn').disabled = false;
-          document.getElementById('statusMsg').innerHTML =
-            '<span class="text-success">✅ Face captured! Now click Register to complete registration and train the model.</span>';
-          btn.innerHTML = '✅ Face Captured';
-          btn.disabled = true;
-        }, 15000);
-      }
-    } catch (e) {
-      document.getElementById('statusMsg').innerHTML =
-        `<span class="text-danger">❌ Error: ${e.message}</span>`;
-      btn.disabled = false;
-      btn.innerHTML = '📸 Capture Face First';
-    }
-  }
-</script>
+            <!-- Circular alignment guide -->
+            <div id="faceGuide" class="face-guide-circle hidden"></div>
 
+            <!-- Initial Camera Placeholder -->
+            <div id="cameraPlaceholder" class="text-center p-6 text-slate-400">
+              <div class="w-12 h-12 mx-auto rounded-full bg-slate-800 text-slate-400 flex items-center justify-center mb-3">
+                <i class="fa-solid fa-camera text-xl"></i>
+              </div>
+              <p class="text-xs font-semibold text-slate-300">Camera Inactive</p>
+              <p class="text-xs text-slate-400 mt-1">Click "Activate Camera" to enable webcam for face capture.</p>
+            </div>
+
+            <!-- Capture in-progress indicator -->
+            <div id="capturingOverlay" class="hidden absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center text-white p-4">
+              <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-400 mb-2"></i>
+              <p class="text-xs font-semibold" id="captureProgressText">Capturing 1 of 5...</p>
+              <p class="text-[11px] text-slate-400 mt-1">Please look straight and blink naturally</p>
+            </div>
+
+            <!-- Success Check Overlay -->
+            <div id="successOverlay" class="hidden absolute inset-0 bg-emerald-900/90 flex flex-col items-center justify-center text-white p-4">
+              <div class="w-12 h-12 rounded-full bg-emerald-700 text-white flex items-center justify-center text-xl mb-2">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <p class="text-sm font-bold text-white">Biometrics Verified</p>
+              <p class="text-xs text-emerald-200 mt-0.5" id="samplesCountLabel">5 facial samples encoded</p>
+            </div>
+
+          </div>
+
+          <!-- Camera Controls -->
+          <div class="mt-4 space-y-2">
+            <button type="button" id="startCamBtn" onclick="startCamera()"
+              class="w-full py-2 px-3 rounded-lg border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-video text-xs text-slate-500"></i> Activate Camera
+            </button>
+
+            <button type="button" id="captureBtn" onclick="performCapture()" disabled
+              class="w-full py-2.5 px-3 rounded-lg bg-blue-700 hover:bg-blue-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold text-xs shadow-sm transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-camera text-xs"></i> Capture &amp; Verify Face
+            </button>
+          </div>
+
+          <!-- Micro instructions -->
+          <ul class="mt-4 space-y-1.5 text-[11px] text-slate-500">
+            <li class="flex items-center gap-1.5">
+              <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i> Ensure face is evenly lit without harsh backlight.
+            </li>
+            <li class="flex items-center gap-1.5">
+              <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i> Remove sunglasses or heavy masks during setup.
+            </li>
+            <li class="flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved text-blue-600 text-[10px]"></i> Liveness anti-spoofing automatically validates live person.
+            </li>
+          </ul>
+
+        </div>
+
+        <div class="pt-6 border-t border-slate-100 mt-6">
+          <button type="submit" id="submitRegBtn"
+            class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-sm transition active:scale-[0.99] flex items-center justify-center gap-2">
+            <i class="fa-solid fa-user-check text-xs"></i> Complete Registration
+          </button>
+        </div>
+
+      </div>
+
+    </form>
+  </main>
+
+  <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+    Chandubhai S. Patel Institute of Technology &bull; CHARUSAT University
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/register.js') }}"></script>
 </body>
 </html>

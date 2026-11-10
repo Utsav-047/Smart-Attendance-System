@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Smart Attendance System - Authentication & Forgot Password Styles (auth.css)
+   ========================================================================== */
+
+/* Step Indicator Bar in Forgot Password Wizard */
+.step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.step-dot.active {
+  background-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.step-dot.completed {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.step-dot.inactive {
+  background-color: #e2e8f0;
+  color: #64748b;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background-color: #e2e8f0;
+  transition: background-color 0.3s ease;
+}
+
+.step-line.completed {
+  background-color: #10b981;
+}
+
+/* 6-Digit Verification Code Inputs */
+.otp-input-group {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.otp-digit {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: monospace;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.otp-digit:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  transform: translateY(-1px);
+}
+
+.otp-digit.filled {
+  border-color: #93c5fd;
+  background-color: #eff6ff;
+}
+
+/* Password Strength Meter */
+.strength-bar {
+  height: 4px;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Password Toggle Eye Button */
+.password-toggle-btn {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.password-toggle-btn:hover {
+  color: #1e293b;
+}
+

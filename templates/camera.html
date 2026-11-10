@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Live Face Verification - Smart Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/camera.css') }}">
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col antialiased bg-slate-950" data-subject-id="{{ subject_id }}">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+    
+    <div class="flex items-center gap-3">
+      <a href="/admin" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Return to Dashboard">
+        <i class="fa-solid fa-arrow-left text-sm"></i>
+      </a>
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+          <i class="fa-solid fa-camera"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-white tracking-tight leading-none">Live Attendance Camera</h1>
+          <p class="text-[11px] text-slate-400 mt-1">Deep Learning Biometrics &amp; Anti-Spoofing</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Status Indicator -->
+    <div class="flex items-center gap-3">
+      
+      <div id="statusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-700/60 text-emerald-400 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
+        <span id="statusText">Active Recognition</span>
+      </div>
+
+      <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-300">
+        <i class="fa-solid fa-book text-slate-400 text-[11px]"></i>
+        <select id="subjectSelector" onchange="changeSubject(this.value)" class="bg-transparent text-xs text-white font-medium outline-none">
+          {% for s in subjects %}
+          <option value="{{ s.id }}" class="bg-slate-900" {% if s.id|string == subject_id|string %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button id="stopBtn" onclick="stopRecognition()"
+        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition">
+        <i class="fa-solid fa-stop text-xs"></i> Stop Scanner
+      </button>
+
+    </div>
+
+  </header>
+
+  <!-- Main Viewport Layout -->
+  <div class="flex-1 flex flex-col lg:flex-row h-[calc(100vh-57px)] overflow-hidden">
+    
+    <!-- Left Camera Stream View (Full Video Area) -->
+    <div class="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
+      
+      <!-- Video Feed Stream -->
+      <img id="cameraFeed" src="/admin/video-feed" alt="Live Camera Video Stream"
+        onerror="handleFeedError()"
+        class="w-full h-full object-contain">
+
+      <!-- Offline / Stopped Overlay -->
+      <div id="offlineOverlay" class="hidden absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-16 h-16 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-2xl mb-4">
+          <i class="fa-solid fa-camera-slash"></i>
+        </div>
+        <h2 class="text-lg font-bold text-white">Camera Feed Inactive</h2>
+        <p class="text-xs text-slate-400 mt-1 max-w-sm">Face recognition stream has finished or is offline. All verified attendees have been recorded to the database.</p>
+        <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
+          <button onclick="finalizeAndNotifyFromCamera()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-solid fa-envelope-circle-check text-xs"></i> Finalize &amp; Email Absentees
+          </button>
+          <a href="/admin" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition">
+            Return to Dashboard
+          </a>
+          <button onclick="restartRecognition()" class="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 font-semibold text-xs transition">
+            Restart Camera
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom HUD Overlay -->
+      <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none">
+        <div class="flex items-center gap-2 bg-slate-900/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl text-xs text-slate-300">
+          <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+          <span>Liveness Guard Active</span>
+        </div>
+        <div class="bg-slate-900/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl text-xs text-slate-300">
+          FPS: <span class="font-mono text-emerald-400 font-bold">30</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Verification Panel (340px) -->
+    <aside class="w-full lg:w-80 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col justify-between">
+      
+      <!-- Top Panel Header -->
+      <div class="p-4 border-b border-slate-800">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Attendance Session</h2>
+          <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/60">Live Sync</span>
+        </div>
+        
+        <!-- Live Count Banner -->
+        <div class="mt-3 p-4 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-slate-400 font-medium">Verified Attendees</p>
+            <p id="attendeeCount" class="text-3xl font-bold text-white num-tabular mt-0.5">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-base">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Verified Student Log -->
+      <div class="flex-1 p-4 overflow-y-auto space-y-2">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Real-time Detections</p>
+        <div id="attendeesList" class="space-y-2 text-xs">
+          <!-- Populated dynamically via JS -->
+          <div id="emptyLog" class="p-6 text-center text-slate-500">
+            <i class="fa-solid fa-user-clock text-xl text-slate-600 mb-2 block"></i>
+            Waiting for student faces in camera view...
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Actions -->
+      <div class="p-4 border-t border-slate-800 bg-slate-900/90 space-y-2">
+        <button onclick="finalizeAndNotifyFromCamera()" class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm">
+          <i class="fa-solid fa-envelope-circle-check text-xs"></i> Finalize &amp; Email Absentees
+        </button>
+        <a href="/admin/attendance" class="w-full py-2 px-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-list-check text-xs"></i> View Attendance Table
+        </a>
+        <a href="/admin" class="w-full py-2 px-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-arrow-left text-xs"></i> Done &amp; Return to Dashboard
+        </a>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+</body>
+</html>

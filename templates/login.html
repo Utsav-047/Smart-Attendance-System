@@ -2,46 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Login | Smart Attendance</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: linear-gradient(135deg, #0b3d91, #1e88e5);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card { border: none; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In - Smart Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 </head>
-<body>
-<div class="card p-4" style="width:380px">
-  <div class="text-center mb-4">
-    <div style="color:#0b3d91;font-size:22px;font-weight:700">📷 SmartAttendance</div>
-    <p class="text-muted small">AI-Based Attendance System</p>
-  </div>
+<body class="min-h-screen flex flex-col justify-between text-slate-800 antialiased">
 
-  {% if error %}
-  <div class="alert alert-danger py-2 small">{{ error }}</div>
-  {% endif %}
-
-  <form method="POST">
-    <div class="mb-3">
-      <label class="form-label fw-semibold">Email</label>
-      <input type="email" name="email" class="form-control" placeholder="you@email.com" required>
+  <!-- Top Navigation Bar -->
+  <header class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div>
+          <span class="font-bold text-slate-900 text-lg tracking-tight">Smart Attendance</span>
+          <span class="text-xs block text-slate-500 font-medium">Department of AI &amp; Machine Learning</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <span class="text-slate-500 hidden sm:inline">New student?</span>
+        <a href="/register" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition">
+          <i class="fa-solid fa-user-plus text-xs text-slate-400"></i> Register
+        </a>
+      </div>
     </div>
-    <div class="mb-4">
-      <label class="form-label fw-semibold">Password</label>
-      <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-    </div>
-    <button class="btn btn-primary w-100 py-2 fw-bold">Login</button>
-  </form>
+  </header>
 
-  <div class="text-center mt-3">
-    <small class="text-muted">New student? <a href="/register">Register here</a></small><br>
-    <small class="text-muted">Admin: admin@gmail.com / admin123</small>
-  </div>
-</div>
+  <!-- Main Card Container -->
+  <main class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-md">
+      
+      <!-- Card -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 sm:p-10">
+        
+        <div class="mb-8">
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Account Sign In</h1>
+          <p class="text-sm text-slate-500 mt-1.5">Enter your academic credentials to access the attendance portal.</p>
+        </div>
+
+        {% if error %}
+        <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3">
+          <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
+          <div>
+            <p class="font-semibold">Authentication Error</p>
+            <p class="text-red-600 mt-0.5">{{ error }}</p>
+          </div>
+        </div>
+        {% endif %}
+
+        <form method="POST" id="loginForm" class="space-y-5">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2" for="email">Institutional Email</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                <i class="fa-solid fa-envelope text-sm"></i>
+              </span>
+              <input type="email" id="email" name="email" required autofocus
+                placeholder="student@charusat.edu.in"
+                class="block w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm transition">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider" for="password">Password</label>
+              <a href="/forgot_password" class="text-xs font-medium text-blue-700 hover:text-blue-800 hover:underline">Forgot password?</a>
+            </div>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                <i class="fa-solid fa-lock text-sm"></i>
+              </span>
+              <input type="password" id="password" name="password" required
+                placeholder="Enter password"
+                class="block w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm transition">
+              <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600">
+                <i id="toggleIcon" class="fa-solid fa-eye text-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" id="submitBtn"
+              class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm shadow-sm transition active:scale-[0.99]">
+              <i class="fa-solid fa-right-to-bracket text-xs"></i> Sign In to Portal
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Administrator or Faculty?</span>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 font-medium">
+            <i class="fa-solid fa-shield-halved text-slate-400"></i> Role Auto-Detected
+          </span>
+        </div>
+
+      </div>
+
+      <!-- Trust & Verification Footer -->
+      <div class="text-center mt-6 text-xs text-slate-400 flex items-center justify-center gap-4">
+        <span><i class="fa-solid fa-lock text-slate-400 mr-1"></i> 256-bit Secure</span>
+        <span>&bull;</span>
+        <span><i class="fa-solid fa-shield-check text-slate-400 mr-1"></i> Anti-Spoofing Enabled</span>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+    Chandubhai S. Patel Institute of Technology &bull; CHARUSAT University
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/login.js') }}"></script>
 </body>
 </html>

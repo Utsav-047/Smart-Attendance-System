@@ -2,194 +2,689 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; margin: 0; }
-    .sidebar { width:230px; min-height:100vh; background:#0b3d91; position:fixed; top:0; left:0; padding-top:20px; z-index:100; }
-    .sidebar .brand { color:white; font-size:18px; font-weight:700; padding:15px 20px 25px; border-bottom:1px solid rgba(255,255,255,0.15); display:block; }
-    .sidebar a { display:block; color:rgba(255,255,255,0.75); padding:13px 20px; text-decoration:none; font-size:14px; border-left:3px solid transparent; transition:all 0.2s; }
-    .sidebar a:hover, .sidebar a.active { background:rgba(255,255,255,0.1); color:white; border-left-color:white; }
-    .sidebar a i { width:22px; margin-right:8px; }
-    .main { margin-left:230px; padding:30px; }
-    .topbar { background:white; padding:16px 24px; border-radius:12px; margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-    .stat-card { border-radius:14px; padding:24px; color:white; box-shadow:0 4px 15px rgba(0,0,0,0.12); border:none; }
-    .stat-card .icon { font-size:34px; opacity:0.8; }
-    .stat-card h2 { font-size:2.2rem; font-weight:700; margin:8px 0 4px; }
-    .stat-card p  { margin:0; opacity:0.85; font-size:14px; }
-    .badge-present { background:#d1fae5; color:#065f46; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
-    .badge-absent  { background:#fee2e2; color:#991b1b; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
-    .badge-pending { background:#fef3c7; color:#92400e; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
-    #toast { position:fixed; bottom:30px; right:30px; z-index:9999; min-width:320px; display:none; border-radius:10px; font-size:14px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Administrator Dashboard - Smart Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
-<body>
+<body class="min-h-screen text-slate-800 antialiased flex flex-col lg:flex-row">
 
-<div class="sidebar">
-  <span class="brand"><i class="fas fa-camera me-2"></i>SmartAttendance</span>
-  <a href="/admin" class="active"><i class="fas fa-tachometer-alt"></i>Dashboard</a>
-  <a href="/admin/attendance"><i class="fas fa-calendar-check"></i>Attendance History</a>
-  <a href="/admin/students"><i class="fas fa-users"></i>All Students</a>
-  <a href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a>
-</div>
+  <!-- Mobile Overlay -->
+  <div id="mobileOverlay" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
-<div class="main">
-
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <div>
-      <h5 class="mb-0 fw-bold">Admin Dashboard</h5>
-      <small class="text-muted">{{ today }}</small>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-      <button class="btn btn-primary fw-semibold" onclick="startRecognition(this)">
-        <i class="fas fa-camera me-2"></i>Start Face Recognition
-      </button>
-      <button class="btn btn-warning fw-semibold text-dark" onclick="closeAttendance(this)">
-        <i class="fas fa-lock me-2"></i>Close Attendance
-      </button>
-      <button class="btn btn-danger fw-semibold" onclick="sendEmails(this)">
-        <i class="fas fa-envelope me-2"></i>Send Absent Emails
+  <!-- Sidebar (Deep Slate-Navy Executive) -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white z-50 flex flex-col transition-transform duration-300 -translate-x-full lg:translate-x-0">
+    
+    <!-- Brand Header -->
+    <div class="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-white tracking-tight leading-none">Smart Attendance</h1>
+          <p class="text-[11px] text-slate-400 mt-1">Admin Management</p>
+        </div>
+      </div>
+      <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
       </button>
     </div>
-  </div>
 
-  <!-- STAT CARDS -->
-  <div class="row g-4 mb-4">
-    <div class="col-md-3">
-      <div class="stat-card" style="background:linear-gradient(135deg,#1e40af,#3b82f6)">
-        <div class="icon"><i class="fas fa-users"></i></div>
-        <h2>{{ total_students }}</h2>
-        <p>Total Students</p>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stat-card" style="background:linear-gradient(135deg,#065f46,#10b981)">
-        <div class="icon"><i class="fas fa-user-check"></i></div>
-        <h2>{{ present_today }}</h2>
-        <p>Present Today</p>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stat-card" style="background:linear-gradient(135deg,#991b1b,#ef4444)">
-        <div class="icon"><i class="fas fa-user-times"></i></div>
-        <h2>{{ absent_today }}</h2>
-        <p>Absent Today</p>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="stat-card" style="background:linear-gradient(135deg,#92400e,#f59e0b)">
-        <div class="icon"><i class="fas fa-clock"></i></div>
-        <h2>{{ pending_today }}</h2>
-        <p>Pending</p>
-      </div>
-    </div>
-  </div>
+    <!-- Nav Items -->
+    <nav class="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+      <p class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Core Navigation</p>
+      
+      <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-blue-700 text-white">
+        <i class="fa-solid fa-chart-pie w-4 text-center"></i> Overview Dashboard
+      </a>
+      
+      <a href="/admin/attendance" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition">
+        <i class="fa-solid fa-clipboard-list w-4 text-center text-slate-400"></i> Attendance Records
+      </a>
+      
+      <a href="/admin/students" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition">
+        <i class="fa-solid fa-user-group w-4 text-center text-slate-400"></i> Student Directory
+      </a>
 
-  <!-- PROGRESS BAR -->
-  {% if total_students > 0 %}
-  <div class="card p-4 mb-4 border-0 shadow-sm" style="border-radius:12px">
-    <div class="d-flex justify-content-between mb-2">
-      <span class="fw-semibold">Today's Attendance Rate</span>
-      <span class="fw-bold">{{ ((present_today / total_students) * 100) | round(1) }}%</span>
-    </div>
-    <div class="progress" style="height:12px;border-radius:8px">
-      <div class="progress-bar bg-success"
-           style="width:{{ (present_today / total_students) * 100 }}%;border-radius:8px"></div>
-    </div>
-  </div>
-  {% endif %}
+      <p class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6 mb-2">Live Operations</p>
 
-  <!-- ATTENDANCE TABLE -->
-  <div class="card border-0 shadow-sm" style="border-radius:12px">
-    <div class="card-body p-0">
-      <div class="px-4 pt-4 pb-2">
-        <h6 class="fw-bold mb-0">Today's Attendance — {{ today }}</h6>
+      <a href="/admin/camera?subject_id={{ selected_subject.id }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition">
+        <i class="fa-solid fa-video w-4 text-center text-slate-400"></i> Live Camera Portal
+      </a>
+
+      <a href="/admin/register" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition">
+        <i class="fa-solid fa-user-shield w-4 text-center text-slate-400"></i> Add Administrator
+      </a>
+    </nav>
+
+    <!-- Bottom Profile & Logout -->
+    <div class="p-4 border-t border-slate-800 bg-slate-900/60">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs font-bold border border-slate-700">
+            A
+          </div>
+          <div class="truncate">
+            <p class="text-xs font-semibold text-white truncate">Administrator</p>
+            <p class="text-[10px] text-slate-400 truncate">System Operator</p>
+          </div>
+        </div>
+        <a href="/logout" title="Sign Out" class="p-2 text-slate-400 hover:text-rose-400 transition">
+          <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+        </a>
       </div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-dark">
-            <tr><th>#</th><th>Name</th><th>Roll</th><th>Email</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {% for row in records %}
-            <tr>
-              <td>{{ loop.index }}</td>
-              <td>{{ row.name }}</td>
-              <td><code>{{ row.roll }}</code></td>
-              <td>{{ row.email }}</td>
-              <td>
-                {% if row.status == 'Present' %}
-                  <span class="badge-present">✓ Present</span>
-                {% elif row.status == 'Absent' %}
-                  <span class="badge-absent">✗ Absent</span>
-                {% else %}
-                  <span class="badge-pending">⏳ Pending</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" class="text-center py-5 text-muted">No students registered yet</td></tr>
+    </div>
+
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
+    
+    <!-- Top Action Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+      
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 tracking-tight">Today's Attendance Overview</h2>
+          <p class="text-xs text-slate-500">Date: <span class="font-medium text-slate-700">{{ today }}</span></p>
+        </div>
+      </div>
+
+      <!-- Subject Filter & Actions -->
+      <div class="flex items-center gap-2.5">
+        
+        <form method="GET" action="/admin" class="flex items-center gap-2">
+          <label for="subjectSelect" class="text-xs text-slate-500 font-medium hidden sm:inline">Subject:</label>
+          <select id="subjectSelect" name="subject_id" onchange="this.form.submit()"
+            class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-800 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+            {% for s in subjects %}
+            <option value="{{ s.id }}" {% if s.id|string == selected_subject.id|string %}selected{% endif %}>{{ s.name }}</option>
             {% endfor %}
-          </tbody>
-        </table>
+          </select>
+        </form>
+
+        <button onclick="openSubjectModal()" class="p-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium" title="Add New Subject">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+
+      </div>
+
+    </header>
+
+    <!-- Content Area -->
+    <main class="flex-1 p-4 sm:p-8 space-y-6">
+
+      <!-- Action Toolbar Banner -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        
+        <div>
+          <p class="text-xs font-bold text-slate-900 uppercase tracking-wider">Attendance Controls</p>
+          <p class="text-xs text-slate-500 mt-0.5">Active Subject: <strong class="text-slate-800">{{ selected_subject.name }}</strong></p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          
+          <button onclick="startRecognition({{ selected_subject.id }})"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-sm transition">
+            <i class="fa-solid fa-camera text-xs"></i> Start Face Recognition
+          </button>
+
+          <button onclick="openCloseAttendanceModal()"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition" title="Finalize today's attendance and trigger automated absentee emails">
+            <i class="fa-solid fa-lock text-xs text-slate-500"></i> Close &amp; Mark Absentees
+          </button>
+
+          <button onclick="sendEmails({{ selected_subject.id }})"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition" title="Dispatch absence alert emails to absentees">
+            <i class="fa-solid fa-envelope text-xs text-slate-500"></i> Email Absent Alerts
+          </button>
+
+          <button onclick="openEmailLogsModal({{ selected_subject.id }})"
+            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition" title="View Dispatched Email History">
+            <i class="fa-solid fa-paper-plane text-xs text-slate-500"></i> Email Logs
+          </button>
+
+          <button onclick="resetTodayAttendance({{ selected_subject.id }})"
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold transition" title="Reset Today's Attendance">
+            <i class="fa-solid fa-rotate-left text-xs"></i> Reset
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- KPI Stat Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        
+        <!-- Total Students -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Enrolled Students</span>
+            <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-users"></i>
+            </span>
+          </div>
+          <p class="text-2xl font-bold text-slate-900 mt-3 num-tabular">{{ total_students }}</p>
+          <p class="text-[11px] text-slate-400 mt-1">Total registered in database</p>
+        </div>
+
+        <!-- Present Today -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Present Today</span>
+            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-user-check"></i>
+            </span>
+          </div>
+          <p class="text-2xl font-bold text-emerald-700 mt-3 num-tabular">{{ present_today }}</p>
+          <p class="text-[11px] text-emerald-600 mt-1 font-medium">Verified by face biometrics</p>
+        </div>
+
+        <!-- Absent Today -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-rose-700 uppercase tracking-wider">Marked Absent</span>
+            <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-user-xmark"></i>
+            </span>
+          </div>
+          <p class="text-2xl font-bold text-rose-700 mt-3 num-tabular">{{ absent_today }}</p>
+          <p class="text-[11px] text-rose-600 mt-1 font-medium">Unexcused or missing</p>
+        </div>
+
+        <!-- Pending Today -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider">Pending Scan</span>
+            <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+          </div>
+          <p class="text-2xl font-bold text-amber-700 mt-3 num-tabular">{{ pending_today }}</p>
+          <p class="text-[11px] text-amber-600 mt-1 font-medium">Awaiting camera verification</p>
+        </div>
+
+      </div>
+
+      <!-- Chart and Progress Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Doughnut Distribution Chart -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 tracking-tight">Attendance Distribution</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Ratio of present vs absent vs pending</p>
+          </div>
+          <div class="h-48 my-4 flex items-center justify-center">
+            <canvas id="attendanceDoughnut" data-present="{{ present_today }}" data-absent="{{ absent_today }}" data-pending="{{ pending_today }}"></canvas>
+          </div>
+          <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center text-xs">
+            <div>
+              <p class="font-bold text-emerald-700 num-tabular">{{ present_today }}</p>
+              <p class="text-[10px] text-slate-400">Present</p>
+            </div>
+            <div>
+              <p class="font-bold text-rose-700 num-tabular">{{ absent_today }}</p>
+              <p class="text-[10px] text-slate-400">Absent</p>
+            </div>
+            <div>
+              <p class="font-bold text-amber-700 num-tabular">{{ pending_today }}</p>
+              <p class="text-[10px] text-slate-400">Pending</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Rate Summary & Quick Subject Info (2 cols) -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">Today's Class Clearance Rate</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Percentage of students physically marked present in {{ selected_subject.name }}</p>
+              </div>
+              {% set rate = ((present_today / total_students * 100)|round(1)) if total_students else 0 %}
+              <span class="text-xl font-bold num-tabular {% if rate >= 75 %}text-emerald-700{% else %}text-amber-700{% endif %}">
+                {{ rate }}%
+              </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-100 rounded-full h-3 mt-4 overflow-hidden">
+              <div class="h-3 rounded-full transition-all duration-500 {% if rate >= 75 %}bg-emerald-600{% else %}bg-amber-600{% endif %}" style="width: {{ rate }}%"></div>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2">
+              <span>0%</span>
+              <span class="font-semibold text-slate-600">Minimum 75% Regulatory Threshold</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <!-- Feature callouts -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-slate-100 mt-6 text-xs">
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="font-bold text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-blue-600"></i> Anti-Spoofing Active
+              </p>
+              <p class="text-slate-500 mt-1 text-[11px]">Eye-blink &amp; motion variance check protects from smartphone screens and printed photos.</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="font-bold text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-bell text-blue-600"></i> Automated Alerts
+              </p>
+              <p class="text-slate-500 mt-1 text-[11px]">Direct SMTP absent notifications sent to parent &amp; student emails upon locking attendance.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Today's Student Attendance Log Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 tracking-tight">Today's Attendance Roster</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Real-time status for {{ selected_subject.name }} ({{ records|length }} total students)</p>
+          </div>
+          <div>
+            <input type="text" id="rosterSearch" placeholder="Search student name or roll..." onkeyup="filterRoster()"
+              class="w-full sm:w-64 px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600">
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs" id="rosterTable">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Student</th>
+                <th class="py-3 px-4">Roll Number</th>
+                <th class="py-3 px-4">Email Address</th>
+                <th class="py-3 px-4">Subject</th>
+                <th class="py-3 px-4 text-center">Verification Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              {% if records %}
+                {% for r in records %}
+                <tr class="hover:bg-slate-50 transition">
+                  <td class="py-3 px-4 font-semibold text-slate-900">{{ r.name }}</td>
+                  <td class="py-3 px-4 uppercase text-slate-600 font-mono">{{ r.roll }}</td>
+                  <td class="py-3 px-4 text-slate-500">{{ r.email }}</td>
+                  <td class="py-3 px-4 text-slate-600">{{ selected_subject.name }}</td>
+                  <td class="py-3 px-4 text-center">
+                    {% if r.status == 'Present' %}
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                        <i class="fa-solid fa-check text-[10px]"></i> Present
+                      </span>
+                    {% elif r.status == 'Absent' %}
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800">
+                        <i class="fa-solid fa-xmark text-[10px]"></i> Absent
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                        <i class="fa-solid fa-clock text-[10px]"></i> Pending
+                      </span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-slate-400">No student enrollment records found in database.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </main>
+
+    <footer class="py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+      Chandubhai S. Patel Institute of Technology &bull; CHARUSAT University
+    </footer>
+
+  </div>
+
+  <!-- Subject Add Modal -->
+  <div id="subjectModal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-900">Add New Subject</h3>
+        <button onclick="closeSubjectModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form method="POST" action="/admin/subjects/add">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5" for="subject_name">Subject Name</label>
+          <input type="text" id="subject_name" name="subject_name" required placeholder="e.g. Machine Learning"
+            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeSubjectModal()" class="px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-medium hover:bg-slate-50">Cancel</button>
+          <button type="submit" class="px-3.5 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold">Create Subject</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Finalize Attendance Session & Automated Email Flow Modal -->
+  <div id="closeAttendanceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Finalize Attendance Session</h3>
+          <p class="text-xs text-slate-500">Subject: <span class="font-semibold text-slate-700">{{ selected_subject.name }}</span></p>
+        </div>
+      </div>
+      
+      <p class="text-xs text-slate-600 leading-relaxed mb-4">
+        Closing attendance locks today's roster. Any student not verified via facial recognition will be recorded as <strong class="text-rose-600 font-bold">Absent</strong>.
+      </p>
+
+      <div class="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/60 mb-5">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" id="sendEmailsCheckbox" checked class="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+          <div>
+            <span class="text-xs font-bold text-slate-900">Automated Absence Email Dispatch</span>
+            <p class="text-[11px] text-slate-500 mt-0.5">Automatically send official institutional absence notices and cumulative 75% attendance warnings to all absent students' email addresses.</p>
+          </div>
+        </label>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5">
+        <button type="button" onclick="closeCloseAttendanceModal()"
+          class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition">
+          Cancel
+        </button>
+        <button type="button" id="confirmCloseBtn" onclick="submitCloseAttendance({{ selected_subject.id }})"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-sm transition">
+          <i class="fa-solid fa-check text-xs"></i> Finalize &amp; Dispatch
+        </button>
       </div>
     </div>
   </div>
 
-</div>
+  <!-- Email Logs Modal -->
+  <div id="emailLogsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-slate-200 flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Absence Email Alerts Log</h3>
+            <p class="text-xs text-slate-500">Subject: <span class="font-semibold text-slate-700">{{ selected_subject.name }}</span> &bull; Today's Dispatches</p>
+          </div>
+        </div>
+        <button onclick="closeEmailLogsModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
 
-<div id="toast" class="alert shadow-lg px-4 py-3" role="alert"></div>
+      <div id="emailLogsContainer" class="flex-1 overflow-y-auto py-4">
+        <div class="text-center py-8 text-slate-400 text-xs">Loading email delivery logs...</div>
+      </div>
 
-<script>
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.className = `alert alert-${type} shadow-lg px-4 py-3`;
-  t.innerHTML = msg;
-  t.style.display = 'block';
-  setTimeout(() => { t.style.display = 'none'; location.reload(); }, 4000);
-}
+      <div class="pt-4 border-t border-slate-200 flex items-center justify-between text-xs">
+        <span class="text-slate-500">SMTP Service: <strong class="text-slate-700 font-mono">Gmail / SSL-TLS</strong></span>
+        <button onclick="sendEmails({{ selected_subject.id }}, true)" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold transition">
+          <i class="fa-solid fa-rotate text-[11px] text-slate-500"></i> Force Resend To Absentees
+        </button>
+      </div>
+    </div>
+  </div>
 
-async function startRecognition(btn) {
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting...';
-  try {
-    const res  = await fetch('/admin/start-recognition', { method: 'POST' });
-    const data = await res.json();
-    if (data.error) showToast('❌ ' + data.error, 'danger');
-    else showToast('📷 ' + data.message, 'info');
-  } catch(e) { showToast('❌ ' + e.message, 'danger'); }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-camera me-2"></i>Start Face Recognition';
-}
+  <script>
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      const ol = document.getElementById('mobileOverlay');
+      sb.classList.toggle('-translate-x-full');
+      ol.classList.toggle('hidden');
+    }
 
-async function closeAttendance(btn) {
-  if (!confirm('Close attendance? All Pending students will be marked Absent.')) return;
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Closing...';
-  try {
-    const res  = await fetch('/admin/close-attendance', { method: 'POST' });
-    const data = await res.json();
-    if (data.error) showToast('❌ ' + data.error, 'danger');
-    else showToast('🔒 ' + data.message, 'warning');
-  } catch(e) { showToast('❌ ' + e.message, 'danger'); }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-lock me-2"></i>Close Attendance';
-}
+    function openSubjectModal() {
+      document.getElementById('subjectModal').classList.remove('hidden');
+    }
 
-async function sendEmails(btn) {
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
-  try {
-    const res  = await fetch('/admin/send-emails', { method: 'POST' });
-    const data = await res.json();
-    if (data.error) showToast('❌ ' + data.error, 'danger');
-    else showToast('📧 ' + data.message, 'success');
-  } catch(e) { showToast('❌ ' + e.message, 'danger'); }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-envelope me-2"></i>Send Absent Emails';
-}
-</script>
+    function closeSubjectModal() {
+      document.getElementById('subjectModal').classList.add('hidden');
+    }
+
+    function filterRoster() {
+      const q = document.getElementById('rosterSearch').value.toLowerCase();
+      const rows = document.querySelectorAll('#rosterTable tbody tr');
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+
+    // Chart.js Doughnut Initializer
+    document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('attendanceDoughnut');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Present', 'Absent', 'Pending'],
+            datasets: [{
+              data: [{{ present_today }}, {{ absent_today }}, {{ pending_today }}],
+              backgroundColor: ['#16a34a', '#dc2626', '#d97706'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            cutout: '72%'
+          }
+        });
+      }
+    });
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    async function startRecognition(subjectId) {
+      try {
+        const res = await fetch('/admin/start-recognition', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ subject_id: subjectId })
+        });
+        const data = await res.json();
+        if (data.redirect) {
+          window.location.href = data.redirect;
+        } else {
+          window.location.href = `/admin/camera?subject_id=${subjectId}`;
+        }
+      } catch (e) {
+        window.location.href = `/admin/camera?subject_id=${subjectId}`;
+      }
+    }
+
+    function openCloseAttendanceModal() {
+      document.getElementById('closeAttendanceModal').classList.remove('hidden');
+    }
+
+    function closeCloseAttendanceModal() {
+      document.getElementById('closeAttendanceModal').classList.add('hidden');
+    }
+
+    async function submitCloseAttendance(subjectId) {
+      const sendEmailsFlag = document.getElementById('sendEmailsCheckbox').checked;
+      const btn = document.getElementById('confirmCloseBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> Processing...';
+
+      try {
+        const res = await fetch('/admin/close-attendance', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ 
+            subject_id: subjectId,
+            send_emails: sendEmailsFlag 
+          })
+        });
+        const data = await res.json();
+        closeCloseAttendanceModal();
+        alert(data.message || 'Attendance finalized.');
+        window.location.reload();
+      } catch (e) {
+        alert('Error closing attendance: ' + e);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check text-xs"></i> Finalize &amp; Dispatch';
+      }
+    }
+
+    // Direct helper
+    function closeAttendance(subjectId) {
+      openCloseAttendanceModal();
+    }
+
+    async function sendEmails(subjectId, forceResend = false) {
+      const promptMsg = forceResend 
+        ? 'Force resend absence alert emails to all absent students (even if already sent today)?'
+        : 'Dispatch automated absence alert emails to absent students in this subject?';
+      if (!confirm(promptMsg)) return;
+
+      try {
+        const res = await fetch('/admin/send-emails', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ 
+            subject_id: subjectId,
+            force_resend: forceResend 
+          })
+        });
+        const data = await res.json();
+        alert(data.message || 'Email dispatch initiated.');
+        const logsModal = document.getElementById('emailLogsModal');
+        if (logsModal && !logsModal.classList.contains('hidden')) {
+          openEmailLogsModal(subjectId);
+        }
+      } catch (e) {
+        alert('Error sending emails: ' + e);
+      }
+    }
+
+    async function openEmailLogsModal(subjectId) {
+      document.getElementById('emailLogsModal').classList.remove('hidden');
+      const container = document.getElementById('emailLogsContainer');
+      container.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching email delivery logs...</div>';
+      
+      try {
+        const res = await fetch(`/admin/email-logs?subject_id=${subjectId}`);
+        const data = await res.json();
+        const logs = data.logs || [];
+
+        if (logs.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-10 text-slate-400 text-xs">
+              <i class="fa-solid fa-envelope-open text-2xl text-slate-300 mb-2 block"></i>
+              No automated absence emails have been dispatched for this subject today.<br>
+              <span class="text-slate-500 mt-1 inline-block">Emails are automatically sent when you close attendance or click "Email Absent Alerts".</span>
+            </div>
+          `;
+          return;
+        }
+
+        let html = `
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-3">Student</th>
+                  <th class="py-2.5 px-3">Recipient Email</th>
+                  <th class="py-2.5 px-3 text-center">Delivery Status</th>
+                  <th class="py-2.5 px-3 text-right">Dispatched At</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-700">
+        `;
+
+        logs.forEach(l => {
+          let badge = '';
+          if (l.status === 'Sent') {
+            badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Delivered</span>';
+          } else if (l.status === 'Simulated') {
+            badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800" title="Recorded in local log">Queued / Simulated</span>';
+          } else {
+            badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800" title="${l.error_message || 'Delivery error'}">Failed</span>`;
+          }
+
+          html += `
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 px-3">
+                <span class="font-bold text-slate-900">${l.student_name}</span>
+                <span class="block text-[10px] text-slate-400 font-mono">${l.roll || ''}</span>
+              </td>
+              <td class="py-2.5 px-3 font-mono text-slate-600 text-[11px]">${l.recipient_email}</td>
+              <td class="py-2.5 px-3 text-center">${badge}</td>
+              <td class="py-2.5 px-3 text-right text-slate-400 text-[11px]">${l.sent_at}</td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-rose-600">Failed to load email logs: ${e}</div>`;
+      }
+    }
+
+    function closeEmailLogsModal() {
+      document.getElementById('emailLogsModal').classList.add('hidden');
+    }
+
+    async function resetTodayAttendance(subjectId) {
+      if (!confirm('Are you sure you want to reset attendance for today? All attendance rows for today will be deleted.')) return;
+      try {
+        const res = await fetch('/admin/reset-attendance', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({ subject_id: subjectId })
+        });
+        const data = await res.json();
+        alert(data.message || 'Today attendance reset.');
+        window.location.reload();
+      } catch (e) {
+        alert('Error resetting: ' + e);
+      }
+    }
+  </script>
 </body>
 </html>
