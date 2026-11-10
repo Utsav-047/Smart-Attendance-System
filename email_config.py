@@ -1,3 +1,7 @@
-EMAIL_ADDRESS = "abc684@gmail.com"
-EMAIL_PASSWORD = "your app password"
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
