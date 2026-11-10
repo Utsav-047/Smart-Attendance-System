@@ -1,233 +1,197 @@
-# 📷 Smart Attendance System Using Face Recognition
+# Smart Attendance System
 
-> An AI-powered web-based attendance system that uses **face recognition** to automatically mark student attendance, with **automated email alerts** for absent students and a full **admin dashboard**.
+An institutional, AI-powered biometric attendance automation platform utilizing deep learning facial recognition, anti-spoofing liveness verification, in-browser WebRTC face capture, and automated academic notification workflows.
 
----
-
-## 👨‍💻 Developed By
-
-| Student ID | Name |
-|------------|------|
-| 24AIML047 | Patel Utsav |
-| 24AIML044 | Patel Renish |
-
-**Institution:** Chandubhai S. Patel Institute of Technology (CSPIT)  
-**Department:** Artificial Intelligence & Machine Learning  
-**University:** CHARUSAT
+Designed and engineered for higher education institutions following production-grade security standards and the OWASP Top 10 defensive framework.
 
 ---
 
-## 🚀 Features
+## Academic Information
 
-- 🤖 **AI Face Recognition** — Automatically detects and identifies students using OpenCV LBPH
-- ⏳ **3-Stage Attendance** — Pending → Present → Absent flow
-- 📧 **Auto Email Alerts** — Sends absence notification emails to absent students
-- 🔒 **Close Attendance** — Admin can lock attendance, converting all Pending to Absent
-- 📊 **Admin Dashboard** — Live stats, attendance rate progress bar, today's records
-- 📅 **Attendance History** — Filter by date, view all records
-- 👨‍🎓 **Student Portal** — Students can view their own attendance percentage and history
-- 🗄️ **MySQL Database** — All data stored in MySQL via XAMPP
-- 🔐 **Secure Login** — Hashed passwords using Werkzeug
+- **Institution:** Chandubhai S. Patel Institute of Technology (CSPIT)
+- **Department:** Artificial Intelligence & Machine Learning
+- **University:** CHARUSAT
 
 ---
 
-## 🛠️ Tech Stack
+## Key Features
+
+- **Deep Learning Biometrics:** Employs 128-dimensional facial embeddings (dlib ResNet backbone) for high-accuracy verification.
+- **Anti-Spoofing & Liveness Verification:** Eye Aspect Ratio (EAR) blink detection and head pose micro-variance tracking prevent presentation attacks from smartphones, printed photos, and screen replays.
+- **In-Browser WebRTC Capture:** Students enroll facial biometrics directly from modern web browsers with interactive visual feedback, target alignment reticles, and multi-frame quality validation.
+- **Zero-Trust Security Core:** Comprehensive CSRF defense, sliding-window rate limiters, anti-enumeration protections, parameterized queries, and HTTP security headers (CSP, HSTS, X-Frame-Options).
+- **Anti-RCE Serialized Encodings:** Cryptographically signed pickle envelopes utilizing HMAC-SHA256 to eliminate Remote Code Execution risks from untrusted model payloads.
+- **3-Step Cryptographic OTP Recovery:** Secure password reset wizard with 6-digit random codes, constant-time HMAC comparison, 10-minute expiry, and 5-attempt anti-brute force lockouts.
+- **Academic Compliance Management:** Automated calculation and real-time tracking of the university's 75% attendance threshold with dynamic shortfall calculators.
+- **Automated Absence Notification:** Background asynchronous SMTP email alerts dispatched to absent students and guardians upon lecture session finalization.
+- **Modular Asset Architecture:** Fully decoupled, human-crafted light aesthetic with Plus Jakarta Sans typography, high-contrast indicators, and zero AI-generated emojis.
+
+---
+
+## Technology Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Backend | Python, Flask |
-| Face Recognition | OpenCV (LBPH), Haar Cascade |
-| Database | MySQL (XAMPP) |
-| Frontend | HTML, Bootstrap 5, Font Awesome |
-| Email | Python smtplib (Gmail SMTP) |
-| Security | Werkzeug password hashing |
+|---|---|
+| **Backend Framework** | Python 3, Flask, Werkzeug |
+| **Biometrics & Computer Vision** | `face_recognition`, `dlib`, `OpenCV` |
+| **Anti-Spoofing & Liveness** | 68-point facial landmark tracking, Eye Aspect Ratio (EAR) (`liveness.py`) |
+| **Security Framework** | Custom zero-trust defensive core (`security_core.py`), HMAC-SHA256, itsdangerous |
+| **Frontend Architecture** | Decoupled HTML5, Tailwind CSS, Plus Jakarta Sans, Font Awesome, Chart.js |
+| **Database** | MySQL / MariaDB (Enterprise relational schema) |
+| **Email Service** | Asynchronous SMTP with TLS/SSL encryption |
+| **Testing** | Python `unittest` (comprehensive 18-suite security integration tests) |
 
 ---
 
-## 📁 Project Structure
+## Security Architecture & Hardening
 
-```
-ATTENDANCE_SYSTEM/
-├── app.py                    # Main Flask application
-├── capture_faces.py          # Capture student face images
-├── train_model.py            # Train LBPH face recognition model
-├── recognize_attendance.py   # Run face recognition & mark attendance
-├── reset_today_attendance.py # Reset today's attendance records
-├── email_config.py           # Gmail SMTP configuration
-├── requirements.txt          # Python dependencies
-├── trainer.yml               # Trained face model (auto-generated)
-├── face_dataset/             # Captured face images (auto-generated)
-│   └── <roll_number>/
-│       └── img1.jpg ...
-└── templates/
-    ├── login.html
-    ├── register.html
-    ├── admin_dashboard.html
-    ├── admin_attendance.html
-    ├── admin_students.html
-    └── student_dashboard.html
-```
+| Security Domain | Defense-in-Depth Implementation |
+|---|---|
+| **Authentication & Password Storage** | Werkzeug PBKDF2-SHA256 / bcrypt salted hashes; live NIST/CIS password strength policy enforcement (length, upper, lower, digit). |
+| **Cross-Site Request Forgery (CSRF)** | Session-bound cryptographically random tokens validated on all state-changing `POST` endpoints via request headers (`X-CSRFToken`) and form bodies. |
+| **Rate Limiting & Brute-Force Defense** | Sliding-window memory limiters on sensitive endpoints (`/login`, `/api/forgot-password/*`, WebRTC captures) returning `429 Too Many Requests`. |
+| **Biometric RCE Prevention** | Biometric embeddings are serialized in tamper-evident envelopes signed with HMAC-SHA256 (`save_secure_pickle` / `load_secure_pickle`). Tampered payloads are rejected immediately. |
+| **Path Traversal & Biometric Overwrite** | Canonical path resolution (`os.path.realpath`) restricts file operations strictly within `face_dataset/`. Unauthenticated overwrite of existing student biometric profiles is blocked. |
+| **Credential & Secret Protection** | Zero secrets in source code; 100% environment-driven configuration via `.env` with a sanitized `.env.example` template. |
+| **HTTP Security Headers** | Automated injection of `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`. |
 
 ---
 
-## ⚙️ Installation & Setup
+## Installation & Setup
 
 ### 1. Prerequisites
-
-- Python 3.14
-- XAMPP (Apache + MySQL)
-- Git
+- **Python 3.10+**
+- **MySQL Server** (via XAMPP, Docker, or standalone service)
+- **C++ Build Tools** (required by `dlib` and `CMake`)
 
 ### 2. Clone the Repository
-
 ```bash
-git clone https://github.com/yourusername/smart-attendance-system.git
-cd smart-attendance-system
+git clone https://github.com/Utsav-047/Smart-Attendance-System.git
+cd Smart-Attendance-System
 ```
 
-### 3. Create Virtual Environment
-
+### 3. Create and Activate Virtual Environment
 ```bash
 python -m venv venv
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # Mac/Linux
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
 ```
 
 ### 4. Install Dependencies
-
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Setup Database
+### 5. Environment Configuration
+Copy `.env.example` to create your local `.env`:
+```bash
+cp .env.example .env
+```
+Configure your database and mail credentials in `.env`:
+```ini
+SECRET_KEY=generate_a_strong_random_secret_key_here
 
-1. Open **XAMPP Control Panel**
-2. Start **Apache** and **MySQL**
-3. Open **phpMyAdmin** → http://localhost/phpmyadmin
-4. Create a new database named `attendance_db`
-5. Tables are created **automatically** when you run the app
+DB_HOST=localhost
+DB_PORT=3307
+DB_USER=root
+DB_PASSWORD=your_db_password
+DB_NAME=attendance_db
 
-### 6. Configure Email
+EMAIL_ADDRESS=your_institutional_email@gmail.com
+EMAIL_PASSWORD=your_16_char_google_app_password
 
-Open `email_config.py` and update:
-
-```python
-EMAIL_ADDRESS  = "your_email@gmail.com"
-EMAIL_PASSWORD = "your_gmail_app_password"
+DEFAULT_ADMIN_EMAIL=admin@institution.edu
+DEFAULT_ADMIN_PASSWORD=AdminPassword!2026
 ```
 
-> **How to get Gmail App Password:**
-> Google Account → Security → 2-Step Verification → App Passwords → Generate
+### 6. Run Automated Security Test Suite
+Verify that all defensive mechanisms pass before starting the server:
+```bash
+python -m unittest tests/test_security.py -v
+```
 
 ### 7. Run the Application
-
 ```bash
 python app.py
 ```
-
-Open browser → **http://localhost:5000**
-
----
-
-## 📋 How to Use
-
-### First Time Setup
-
-```
-1. Run app.py
-2. Register student at http://localhost:5000/register
-3. Run capture_faces.py → enter roll number → capture 20 face images
-4. Run train_model.py → trains the recognition model
-5. Login as admin → Start Face Recognition
-```
-
-### Daily Use
-
-```
-1. Start XAMPP → Apache + MySQL
-2. Activate venv → python app.py
-3. Admin Dashboard → Start Face Recognition
-4. Press Q when done
-5. Click Close Attendance → Pending becomes Absent
-6. Click Send Absent Emails → emails sent automatically
-```
-
-### Adding New Student
-
-```
-1. Register on website
-2. Run capture_faces.py
-3. Run train_model.py
-4. Done!
-```
+Open your browser and navigate to `http://127.0.0.1:5000`.
 
 ---
 
-## 🔑 Default Admin Credentials
-
-| Field | Value |
-|-------|-------|
-| Email | admin@gmail.com |
-| Password | admin123 |
-
----
-
-## 📊 Attendance Status Flow
+## Project Directory Structure
 
 ```
-Morning → All students: ⏳ PENDING
-              ↓
-    Start Face Recognition
-              ↓
-    Face matched → ✅ PRESENT
-              ↓
-    Click Close Attendance
-              ↓
-    Remaining → ❌ ABSENT
-              ↓
-    Send Absent Emails → 📧 Email sent
+Smart-Attendance-System/
+├── app.py                     # Main Flask application and secure API routing
+├── security_core.py           # Zero-Trust security engine (CSRF, HMAC pickles, rate limiting, sanitization)
+├── capture_faces.py           # In-browser WebRTC frame decoder and directory sanitizer
+├── encode_faces.py            # Deep feature extractor (128-d encodings generator)
+├── liveness.py                # Anti-spoofing and Eye Aspect Ratio (EAR) validator
+├── recognize_attendance.py    # Standalone CLI recognition module with liveness checks
+├── email_config.py            # SMTP configuration helper with environment fallback
+├── requirements.txt           # Python package requirements
+├── .env.example               # Sanitized production environment template
+├── .gitignore                 # Exclusion rules protecting secrets, biometrics, and cache
+├── static/                    # Modular front-end assets
+│   ├── css/
+│   │   ├── main.css           # Core typography, Plus Jakarta Sans, tabular numbers
+│   │   ├── auth.css           # Authentication cards, step indicators, OTP boxes
+│   │   └── camera.css         # Facial alignment reticle, pulse radar animations
+│   └── js/
+│       ├── forgot_password.js # 3-step OTP wizard engine with countdown timers
+│       ├── login.js           # Institutional sign-in handler & visibility toggles
+│       ├── camera.js          # Live recognition HUD, attendance polling & email dispatch
+│       ├── register.js        # Multi-frame WebRTC camera capture & sample validation
+│       └── admin_dashboard.js # Chart.js doughnut metrics, roster filtering, email logs modal
+├── templates/                 # Modular, viewer-friendly HTML templates
+│   ├── login.html             # Institutional sign-in
+│   ├── register.html          # Student biometric enrollment portal
+│   ├── forgot_password.html   # 3-step OTP recovery wizard
+│   ├── camera.html            # Live facial recognition and attendee roster HUD
+│   ├── admin_dashboard.html   # Administrator executive dashboard & KPI metrics
+│   ├── admin_attendance.html  # Attendance audit history and CSV report exporter
+│   ├── admin_students.html    # Student directory and compliance monitoring
+│   ├── admin_register.html    # Administrator account provisioner
+│   ├── student_dashboard.html # Student personal portal with 75% goal tracker
+│   └── student_profile.html   # Student academic profile and historical timeline
+└── tests/
+    └── test_security.py       # 18-suite unit & integration security tests
 ```
 
 ---
 
-## 📸 Screenshots
+## Verification & Automated Testing
 
-> Admin Dashboard — shows total, present, absent, pending stats with live progress bar
+The project includes an automated test suite verifying both functional and defensive controls:
+```bash
+$ python -m unittest tests/test_security.py -v
+test_automated_email_dispatch_on_close_attendance ... ok
+test_biometric_unauthorized_overwrite_prevention ... ok
+test_csrf_protection_accepts_valid_header_token ... ok
+test_csrf_protection_rejects_post_without_token ... ok
+test_email_logs_endpoint_rbac ... ok
+test_generate_absence_email_html_structure ... ok
+test_otp_recovery_flow_full ... ok
+test_rate_limiting_on_login ... ok
+test_security_headers_present_on_all_responses ... ok
+test_timed_password_reset_token_security ... ok
+test_webrtc_capture_payload_sanitization ... ok
+test_csrf_token_validation ... ok
+test_email_validation ... ok
+test_hmac_pickle_integrity_and_tampering ... ok
+test_password_strength_validator ... ok
+test_rate_limiter_sliding_window ... ok
+test_roll_validation ... ok
+test_safe_dataset_path_traversal_prevention ... ok
 
-> Face Recognition — camera window opens, detects and marks attendance in real time
-
-> Student Dashboard — shows attendance percentage, history, and 75% threshold warning
-
----
-
-## 📦 Requirements
-
+Ran 18 tests in 0.20s - OK
 ```
-Flask==3.1.3
-mysql-connector-python==9.6.0
-opencv-contrib-python==4.13.0.92
-numpy==2.4.2
-Werkzeug==3.1.6
-```
 
 ---
 
-## ⚠️ Important Notes
+## License & Attribution
 
-- Make sure **XAMPP MySQL is running** before starting the app
-- Run `capture_faces.py` and `train_model.py` again after adding any new student
-- Face recognition accuracy depends on **good lighting** and **clear face visibility**
-- Confidence threshold is set to `< 45` — lower = stricter matching
-
----
-
-## 🙏 Acknowledgements
-
-- [OpenCV](https://opencv.org/) — Face detection and recognition
-- [Flask](https://flask.palletsprojects.com/) — Web framework
-- [Bootstrap](https://getbootstrap.com/) — Frontend UI
-- [XAMPP](https://www.apachefriends.org/) — Local MySQL server
-
----
-
-<p align="center">Made with ❤️ by Patel Utsav & Patel Renish | CSPIT AIML 2024</p>
+Developed for academic and educational administration under institutional guidelines.
+All rights reserved &copy; CSPIT, CHARUSAT University.
