@@ -270,17 +270,23 @@ class TestFlaskSecurityIntegration(unittest.TestCase):
         with self.client.session_transaction() as sess:
             token = generate_csrf_token(sess)
 
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = None
+        mock_conn.cursor.return_value = mock_cursor
+
         # Login has rate limit of 10 requests per 60 seconds
         got_429 = False
-        for i in range(15):
-            res = self.client.post(
-                "/",
-                data={"csrf_token": token, "email": "test@charusat.edu.in", "password": "wrong"},
-                environ_overrides={"REMOTE_ADDR": "192.168.1.100"}
-            )
-            if res.status_code == 429:
-                got_429 = True
-                break
+        with patch("app.get_db", return_value=mock_conn):
+            for i in range(15):
+                res = self.client.post(
+                    "/",
+                    data={"csrf_token": token, "email": "test@charusat.edu.in", "password": "wrong"},
+                    environ_overrides={"REMOTE_ADDR": "192.168.1.100"}
+                )
+                if res.status_code == 429:
+                    got_429 = True
+                    break
 
         self.assertTrue(got_429, "Rate limiter failed to block burst requests to /login")
 

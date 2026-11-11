@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: smart-attendance-system
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: CMAKE_BUILD_PARALLEL_LEVEL
+        value: "1"
+      - key: MAKEFLAGS
+        value: "-j1"
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
